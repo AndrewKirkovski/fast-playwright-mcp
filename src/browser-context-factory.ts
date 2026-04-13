@@ -1,4 +1,9 @@
-import { promises as fsPromises } from 'node:fs';
+import {
+  closeSync,
+  promises as fsPromises,
+  openSync,
+  readlinkSync,
+} from 'node:fs';
 import { type AddressInfo, createServer } from 'node:net';
 import { join as pathJoin } from 'node:path';
 import {
@@ -215,58 +220,57 @@ class PersistentContextFactory implements BrowserContextFactory {
     }
     this._userDataDirs.add(userDataDir);
     testDebug('lock user data dir', userDataDir);
-    const browserType = getBrowserType(this.config.browser.browserName);
 
-    // Launch browser with retry logic using recursive approach
-    const launchWithRetry = async (
-      attempt: number
-    ): Promise<{
-      browserContext: BrowserContext;
-      close: () => Promise<void>;
-    }> => {
-      if (attempt >= 5) {
+    // Pre-check the profile lockfile before invoking Chromium. If we skipped
+    // this and called launchPersistentContext directly, Chromium's
+    // ProcessSingleton IPC would deflect the launch to any already-running
+    // Chrome holding the profile — which opens an extra `about:blank` tab in
+    // the neighbour browser *and* fails the launch call. See upstream
+    // microsoft/playwright packages/playwright-core/src/tools/mcp/browserFactory.ts.
+    if (await isProfileLocked5Times(userDataDir)) {
+      throw new Error(
+        `Browser is already in use for ${userDataDir}, use --isolated to run multiple instances of the same browser`
+      );
+    }
+
+    const browserType = getBrowserType(this.config.browser.browserName);
+    try {
+      const browserContext = await browserType.launchPersistentContext(
+        userDataDir,
+        {
+          tracesDir,
+          ...this.config.browser.launchOptions,
+          ...this.config.browser.contextOptions,
+          handleSIGINT: false,
+          handleSIGTERM: false,
+        }
+      );
+      const close = () =>
+        this._closeBrowserContext(browserContext, userDataDir);
+      return { browserContext, close };
+    } catch (error: unknown) {
+      if (
+        error instanceof Error &&
+        error.message.includes("Executable doesn't exist")
+      ) {
+        throw new Error(
+          'Browser specified in your config is not installed. Either install it (likely) or change the config.'
+        );
+      }
+      if (
+        error instanceof Error &&
+        (error.message.includes('ProcessSingleton') ||
+          error.message.includes('exitCode=21'))
+      ) {
+        // Profile lock was acquired between precheck and launch (race).
+        // No retry — retrying recursively leaks about:blank tabs into the
+        // already-running Chrome via ProcessSingleton deflection.
         throw new Error(
           `Browser is already in use for ${userDataDir}, use --isolated to run multiple instances of the same browser`
         );
       }
-
-      try {
-        const browserContext = await browserType.launchPersistentContext(
-          userDataDir,
-          {
-            tracesDir,
-            ...this.config.browser.launchOptions,
-            ...this.config.browser.contextOptions,
-            handleSIGINT: false,
-            handleSIGTERM: false,
-          }
-        );
-        const close = () =>
-          this._closeBrowserContext(browserContext, userDataDir);
-        return { browserContext, close };
-      } catch (error: unknown) {
-        if (
-          error instanceof Error &&
-          error.message.includes("Executable doesn't exist")
-        ) {
-          throw new Error(
-            'Browser specified in your config is not installed. Either install it (likely) or change the config.'
-          );
-        }
-        if (
-          error instanceof Error &&
-          (error.message.includes('ProcessSingleton') ||
-            error.message.includes('Invalid URL'))
-        ) {
-          // User data directory is already in use, retry after delay
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          return launchWithRetry(attempt + 1);
-        }
-        throw error;
-      }
-    };
-
-    return launchWithRetry(0);
+      throw error;
+    }
   }
   private async _closeBrowserContext(
     browserContext: BrowserContext,
@@ -285,11 +289,65 @@ class PersistentContextFactory implements BrowserContextFactory {
     const browserToken =
       this.config.browser.launchOptions?.channel ??
       this.config.browser?.browserName;
-    // Hesitant putting hundreds of files into the user's workspace, so using it for hashing instead.
-    const rootPathToken = rootPath ? `-${createHash(rootPath)}` : '';
+    // Always hash a per-workspace token so different Claude Code sessions
+    // (or any MCP client) in different project directories get isolated
+    // profiles. If the client does not pass rootPath, fall back to the
+    // server process cwd — still deterministic per workspace, and avoids
+    // the previous collision where rootPath-less clients all collapsed
+    // onto a single shared `mcp-chrome` profile.
+    const rootPathToken = `-${createHash(rootPath ?? process.cwd())}`;
     const result = pathJoin(dir, `mcp-${browserToken}${rootPathToken}`);
     await fsPromises.mkdir(result, { recursive: true });
     return result;
+  }
+}
+
+// Ported from upstream:
+// microsoft/playwright packages/playwright-core/src/tools/mcp/browserFactory.ts
+// (isProfileLocked / isProfileLocked5Times). Used to detect a locked user
+// data dir BEFORE invoking Chromium, so we never trigger ProcessSingleton
+// deflection into a neighbour browser.
+function isProfileLocked5Times(userDataDir: string): Promise<boolean> {
+  // Sequential poll with 1s delay between attempts. Implemented recursively
+  // instead of a for/await loop to satisfy the noAwaitInLoop rule, matching
+  // the pattern used in element-discovery.ts (processStrategiesSequentially).
+  const checkAttempt = async (remaining: number): Promise<boolean> => {
+    if (!isProfileLocked(userDataDir)) {
+      return false;
+    }
+    if (remaining <= 1) {
+      return true;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return checkAttempt(remaining - 1);
+  };
+  return checkAttempt(5);
+}
+
+export function isProfileLocked(userDataDir: string): boolean {
+  const lockFile = process.platform === 'win32' ? 'lockfile' : 'SingletonLock';
+  const lockPath = pathJoin(userDataDir, lockFile);
+
+  if (process.platform === 'win32') {
+    try {
+      const fd = openSync(lockPath, 'r+');
+      closeSync(fd);
+      return false;
+    } catch (e: unknown) {
+      return (e as NodeJS.ErrnoException).code !== 'ENOENT';
+    }
+  }
+
+  try {
+    const target = readlinkSync(lockPath);
+    const pid = Number.parseInt(target.split('-').pop() ?? '', 10);
+    if (Number.isNaN(pid)) {
+      return false;
+    }
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
   }
 }
 async function injectCdpPort(browserConfig: FullConfig['browser']) {
