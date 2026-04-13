@@ -782,6 +782,18 @@ export const FIND_ELEMENTS_HTML_TEMPLATES = {
       { length: count },
       (_, i) => `<button>Button ${i}</button>`
     ).join('')}</div>`,
+  IMPLICIT_ROLE_ELEMENTS: `
+    <main>
+      <h1>Main title</h1>
+      <h2>Subtitle</h2>
+      <p>First paragraph.</p>
+      <p>Second paragraph.</p>
+      <hr>
+      <button>Bare button</button>
+      <div role="button">Explicit role button</div>
+      <a href="/somewhere">A link</a>
+    </main>
+  `,
 } as const;
 
 /**
