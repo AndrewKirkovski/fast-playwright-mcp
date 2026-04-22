@@ -4,6 +4,7 @@ import common from './tools/common.js';
 import console from './tools/console.js';
 import { browserDiagnose } from './tools/diagnose.js';
 import dialogs from './tools/dialogs.js';
+import emulate from './tools/emulate.js';
 import evaluate from './tools/evaluate.js';
 import files from './tools/files.js';
 import { browserFindElements } from './tools/find-elements.js';
@@ -23,6 +24,7 @@ export const allTools: AnyTool[] = [
   ...common,
   ...console,
   ...dialogs,
+  ...emulate,
   ...evaluate,
   ...files,
   ...install,

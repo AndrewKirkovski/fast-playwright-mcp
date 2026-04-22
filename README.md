@@ -526,6 +526,20 @@ http.createServer(async (req, res) => {
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
+- **browser_emulate_media**
+  - Title: Emulate media features
+  - Description: Emulate CSS media features (colorScheme, contrast, forcedColors, media, reducedMotion) via page.emulateMedia(). Pass null for a field to disable its emulation. Omit a field to leave it unchanged.
+  - Parameters:
+    - `colorScheme` (optional): prefers-color-scheme. Pass null to disable emulation and fall back to system.
+    - `contrast` (optional): prefers-contrast. Pass null to disable emulation.
+    - `forcedColors` (optional): forced-colors. Pass null to disable emulation.
+    - `media` (optional): CSS media type. "screen" or "print". Pass null to disable emulation.
+    - `reducedMotion` (optional): prefers-reduced-motion. Pass null to disable emulation.
+    - `expectation` (object, optional): Page state after emulation change
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
 - **browser_evaluate**
   - Title: Evaluate JavaScript
   - Description: Evaluate JavaScript expression on page or element and return result
