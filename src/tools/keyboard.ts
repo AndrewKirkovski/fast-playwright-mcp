@@ -100,4 +100,53 @@ const type = defineTabTool({
     await handleSnapshotExpectation(tab, params.expectation, response);
   },
 });
-export default [pressKey, type];
+const keydown = defineTabTool({
+  capability: 'core',
+  schema: {
+    name: 'browser_keydown',
+    title: 'Press a key down',
+    description:
+      'Press and hold a key down without releasing it. Pair with browser_keyup for modifier combos (e.g. hold Shift, then click).',
+    inputSchema: z.object({
+      key: z
+        .string()
+        .describe(
+          'Key to hold down, e.g. `Shift`, `Control`, `ArrowLeft`, or `a`'
+        ),
+      expectation: expectationSchema.describe('Page state config'),
+    }),
+    type: 'destructive',
+  },
+  handle: async (tab, params, response) => {
+    response.addCode(`await page.keyboard.down(${quote(params.key)});`);
+    await tab.waitForCompletion(async () => {
+      await tab.page.keyboard.down(params.key);
+    });
+    await handleSnapshotExpectation(tab, params.expectation, response);
+  },
+});
+const keyup = defineTabTool({
+  capability: 'core',
+  schema: {
+    name: 'browser_keyup',
+    title: 'Release a key',
+    description: 'Release a key previously held down with browser_keydown',
+    inputSchema: z.object({
+      key: z
+        .string()
+        .describe(
+          'Key to release, e.g. `Shift`, `Control`, `ArrowLeft`, or `a`'
+        ),
+      expectation: expectationSchema.describe('Page state config'),
+    }),
+    type: 'destructive',
+  },
+  handle: async (tab, params, response) => {
+    response.addCode(`await page.keyboard.up(${quote(params.key)});`);
+    await tab.waitForCompletion(async () => {
+      await tab.page.keyboard.up(params.key);
+    });
+    await handleSnapshotExpectation(tab, params.expectation, response);
+  },
+});
+export default [pressKey, type, keydown, keyup];

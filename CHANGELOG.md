@@ -23,6 +23,9 @@ This fork descends from [`tontoko/fast-playwright-mcp`](https://github.com/tonto
   a lockfile pre-check, so concurrent sessions across projects don't collide on a shared profile.
 - **`browser_find_elements` implicit ARIA roles** — role searches resolve implicit ARIA roles via
   `getByRole`, so a bare `<button>` matches `role: button` without an explicit `role` attribute.
+- **New input / navigation tools** (ported from upstream): `browser_reload`; `browser_mouse_wheel`
+  (wheel scroll by pixel delta; requires `--caps=vision`); and `browser_keydown` / `browser_keyup`
+  (hold and release a key independently, enabling modifier combos like Shift-click).
 
 ### Fixed
 - **element-discovery CSS selector generation** is now robust to modern markup: per-class

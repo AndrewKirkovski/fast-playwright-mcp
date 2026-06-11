@@ -57,4 +57,20 @@ const goForward = defineTabTool({
     response.addCode(generateForwardCode());
   },
 });
-export default [navigate, goBack, goForward];
+const reload = defineTabTool({
+  capability: 'core',
+  schema: {
+    name: 'browser_reload',
+    title: 'Reload page',
+    description: 'Reload the current page',
+    inputSchema: z.object({
+      expectation: expectationSchema.describe('Page state after reload'),
+    }),
+    type: 'destructive',
+  },
+  handle: async (tab, _params, response) => {
+    await tab.page.reload();
+    response.addCode('await page.reload();');
+  },
+});
+export default [navigate, goBack, goForward, reload];

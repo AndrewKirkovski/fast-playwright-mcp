@@ -100,4 +100,31 @@ const mouseDrag = defineTabTool({
     });
   },
 });
-export default [mouseMove, mouseClick, mouseDrag];
+const mouseWheel = defineTabTool({
+  capability: 'vision',
+  schema: {
+    name: 'browser_mouse_wheel',
+    title: 'Scroll wheel',
+    description:
+      'Scroll the page with the mouse wheel by a pixel delta. Requires --caps=vision.',
+    inputSchema: z.object({
+      deltaX: z
+        .number()
+        .optional()
+        .describe('Horizontal scroll in pixels (default 0)'),
+      deltaY: z
+        .number()
+        .describe('Vertical scroll in pixels; positive scrolls down'),
+      expectation: expectationSchema,
+    }),
+    type: 'readOnly',
+  },
+  handle: async (tab, params, response) => {
+    const deltaX = params.deltaX ?? 0;
+    response.addCode(`await page.mouse.wheel(${deltaX}, ${params.deltaY});`);
+    await tab.waitForCompletion(async () => {
+      await tab.page.mouse.wheel(deltaX, params.deltaY);
+    });
+  },
+});
+export default [mouseMove, mouseClick, mouseDrag, mouseWheel];
