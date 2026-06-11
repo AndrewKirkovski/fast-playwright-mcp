@@ -21,7 +21,8 @@ export type ToolCapability =
   | 'core-tabs'
   | 'core-install'
   | 'vision'
-  | 'pdf';
+  | 'pdf'
+  | 'storage';
 
 export type Config = {
   /**

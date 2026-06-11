@@ -17,6 +17,7 @@ import network from './tools/network.js';
 import pdf from './tools/pdf.js';
 import screenshot from './tools/screenshot.js';
 import snapshot from './tools/snapshot.js';
+import storage from './tools/storage.js';
 import tabs from './tools/tabs.js';
 import type { AnyTool } from './tools/tool.js';
 import wait from './tools/wait.js';
@@ -36,6 +37,7 @@ export const allTools: AnyTool[] = [
   ...pdf,
   ...screenshot,
   ...snapshot,
+  ...storage,
   ...tabs,
   ...wait,
   batchExecuteTool,

@@ -103,6 +103,10 @@ export class Context {
     }
     return this._currentTab;
   }
+  async ensureBrowserContext(): Promise<playwright.BrowserContext> {
+    const { browserContext } = await this._ensureBrowserContext();
+    return browserContext;
+  }
   async closeTab(index: number | undefined): Promise<string> {
     const tab = index === undefined ? this._currentTab : this._tabs[index];
     if (!tab) {

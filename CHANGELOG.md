@@ -26,6 +26,13 @@ This fork descends from [`tontoko/fast-playwright-mcp`](https://github.com/tonto
 - **New input / navigation tools** (ported from upstream): `browser_reload`; `browser_mouse_wheel`
   (wheel scroll by pixel delta; requires `--caps=vision`); and `browser_keydown` / `browser_keyup`
   (hold and release a key independently, enabling modifier combos like Shift-click).
+- **Storage capability** (`--caps=storage`, opt-in) — 17 tools ported from upstream:
+  - **Cookies**: `browser_cookie_list` / `_get` / `_set` / `_delete` / `_clear`.
+  - **Web storage**: `browser_localstorage_*` and `browser_sessionstorage_*` (`list` / `get` / `set` /
+    `delete` / `clear` each).
+  - **Auth/session reuse**: `browser_storage_state` saves cookies + local storage to a JSON file and
+    returns its path; `browser_set_storage_state` restores it (uses Playwright 1.61's
+    `BrowserContext.setStorageState`).
 
 ### Fixed
 - **element-discovery CSS selector generation** is now robust to modern markup: per-class
