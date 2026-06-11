@@ -40,6 +40,10 @@ This fork descends from [`tontoko/fast-playwright-mcp`](https://github.com/tonto
   `browser_verify_text_visible`, `browser_verify_list_visible`, and `browser_verify_value`. Give an
   agent a definitive pass/fail signal (with a generated `expect(...)` snippet) without spending tokens
   on a snapshot to self-interpret.
+- **Network routing / mocking** (`--caps=network`, opt-in) — `browser_route` (intercept a URL glob to
+  fulfill a mock response or continue with header edits), `browser_route_list`, `browser_unroute`, and
+  `browser_network_state_set` (toggle online/offline). Routes are tracked on the `Context` so they
+  persist across navigations.
 
 ### Fixed
 - **element-discovery CSS selector generation** is now robust to modern markup: per-class

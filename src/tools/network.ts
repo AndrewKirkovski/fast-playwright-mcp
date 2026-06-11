@@ -5,7 +5,7 @@ import {
   type NetworkFilterOptions,
   type NetworkRequest,
 } from '../utils/network-filter.js';
-import { defineTabTool } from './tool.js';
+import { defineTabTool, defineTool } from './tool.js';
 
 const networkFilterSchema = z.object({
   urlPatterns: z
@@ -212,4 +212,24 @@ function renderRequest(
   return result.join(' ');
 }
 
-export default [requests];
+const networkState = defineTool({
+  capability: 'network',
+  schema: {
+    name: 'browser_network_state_set',
+    title: 'Set network state',
+    description: 'Toggle the browser between online and offline',
+    inputSchema: z.object({
+      state: z.enum(['online', 'offline']).describe('Network state to apply'),
+    }),
+    type: 'destructive',
+  },
+  handle: async (context, params, response) => {
+    const browserContext = await context.ensureBrowserContext();
+    const offline = params.state === 'offline';
+    await browserContext.setOffline(offline);
+    response.addResult(`Network state set to ${params.state}`);
+    response.addCode(`await page.context().setOffline(${offline});`);
+  },
+});
+
+export default [requests, networkState];

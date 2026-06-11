@@ -20,6 +20,15 @@ type ContextOptions = {
   sessionLog: SessionLog | undefined;
   clientInfo: ClientInfo;
 };
+export type RouteEntry = {
+  pattern: string;
+  status?: number;
+  body?: string;
+  contentType?: string;
+  addHeaders?: Record<string, string>;
+  removeHeaders?: string[];
+  handler: (route: playwright.Route) => Promise<void>;
+};
 export class Context {
   readonly tools: Tool[];
   readonly config: FullConfig;
@@ -33,6 +42,7 @@ export class Context {
     | undefined;
   private readonly _browserContextFactory: BrowserContextFactory;
   private readonly _tabs: Tab[] = [];
+  private readonly _routes: RouteEntry[] = [];
   private _currentTab: Tab | undefined;
   private readonly _clientInfo: ClientInfo;
   private _batchExecutor: BatchExecutor | undefined;
@@ -106,6 +116,31 @@ export class Context {
   async ensureBrowserContext(): Promise<playwright.BrowserContext> {
     const { browserContext } = await this._ensureBrowserContext();
     return browserContext;
+  }
+  async addRoute(entry: RouteEntry): Promise<void> {
+    const browserContext = await this.ensureBrowserContext();
+    await browserContext.route(entry.pattern, entry.handler);
+    this._routes.push(entry);
+  }
+  routes(): RouteEntry[] {
+    return this._routes;
+  }
+  async removeRoute(pattern?: string): Promise<number> {
+    const browserContext = await this.ensureBrowserContext();
+    const toRemove = pattern
+      ? this._routes.filter((r) => r.pattern === pattern)
+      : this._routes.slice();
+    await Promise.all(
+      toRemove.map((entry) =>
+        browserContext.unroute(entry.pattern, entry.handler)
+      )
+    );
+    const keep = pattern
+      ? this._routes.filter((r) => r.pattern !== pattern)
+      : [];
+    this._routes.length = 0;
+    this._routes.push(...keep);
+    return toRemove.length;
   }
   async closeTab(index: number | undefined): Promise<string> {
     const tab = index === undefined ? this._currentTab : this._tabs[index];

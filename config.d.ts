@@ -23,7 +23,8 @@ export type ToolCapability =
   | 'vision'
   | 'pdf'
   | 'storage'
-  | 'testing';
+  | 'testing'
+  | 'network';
 
 export type Config = {
   /**

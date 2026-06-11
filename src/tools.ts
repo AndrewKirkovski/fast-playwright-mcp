@@ -16,6 +16,7 @@ import mouse from './tools/mouse.js';
 import navigate from './tools/navigate.js';
 import network from './tools/network.js';
 import pdf from './tools/pdf.js';
+import route from './tools/route.js';
 import screenshot from './tools/screenshot.js';
 import snapshot from './tools/snapshot.js';
 import storage from './tools/storage.js';
@@ -38,6 +39,7 @@ export const allTools: AnyTool[] = [
   ...network,
   ...mouse,
   ...pdf,
+  ...route,
   ...screenshot,
   ...snapshot,
   ...storage,
