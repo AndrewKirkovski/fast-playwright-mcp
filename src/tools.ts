@@ -8,6 +8,7 @@ import emulate from './tools/emulate.js';
 import evaluate from './tools/evaluate.js';
 import files from './tools/files.js';
 import { browserFindElements } from './tools/find-elements.js';
+import form from './tools/form.js';
 import inspectHtml from './tools/inspect-html.js';
 import install from './tools/install.js';
 import keyboard from './tools/keyboard.js';
@@ -20,6 +21,7 @@ import snapshot from './tools/snapshot.js';
 import storage from './tools/storage.js';
 import tabs from './tools/tabs.js';
 import type { AnyTool } from './tools/tool.js';
+import verify from './tools/verify.js';
 import wait from './tools/wait.js';
 export const allTools: AnyTool[] = [
   ...common,
@@ -28,6 +30,7 @@ export const allTools: AnyTool[] = [
   ...emulate,
   ...evaluate,
   ...files,
+  ...form,
   ...install,
   ...inspectHtml,
   ...keyboard,
@@ -39,6 +42,7 @@ export const allTools: AnyTool[] = [
   ...snapshot,
   ...storage,
   ...tabs,
+  ...verify,
   ...wait,
   batchExecuteTool,
   browserFindElements,

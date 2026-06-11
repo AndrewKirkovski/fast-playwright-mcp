@@ -22,7 +22,8 @@ export type ToolCapability =
   | 'core-install'
   | 'vision'
   | 'pdf'
-  | 'storage';
+  | 'storage'
+  | 'testing';
 
 export type Config = {
   /**

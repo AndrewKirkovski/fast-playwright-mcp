@@ -33,6 +33,13 @@ This fork descends from [`tontoko/fast-playwright-mcp`](https://github.com/tonto
   - **Auth/session reuse**: `browser_storage_state` saves cookies + local storage to a JSON file and
     returns its path; `browser_set_storage_state` restores it (uses Playwright 1.61's
     `BrowserContext.setStorageState`).
+- **`browser_fill_form`** (core) — fill multiple typed form fields (textbox/checkbox/radio/combobox/
+  slider) in a single call, a token-efficient alternative to issuing separate type/select/check tools
+  per field. Uses this fork's `selectors[]` targeting and supports `diveInIframes`.
+- **Verify/assertion tools** (`--caps=testing`, opt-in) — `browser_verify_element_visible`,
+  `browser_verify_text_visible`, `browser_verify_list_visible`, and `browser_verify_value`. Give an
+  agent a definitive pass/fail signal (with a generated `expect(...)` snippet) without spending tokens
+  on a snapshot to self-interpret.
 
 ### Fixed
 - **element-discovery CSS selector generation** is now robust to modern markup: per-class
