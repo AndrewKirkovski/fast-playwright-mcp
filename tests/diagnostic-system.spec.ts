@@ -170,6 +170,7 @@ const DiagnosticSystemTestHelper = {
         id: 'test-tab',
         modalStates: () => [],
         modalStatesMarkdown: () => [],
+        drainFrameNotices: () => [],
       }),
       tab: { page, id: 'test-tab' },
     };

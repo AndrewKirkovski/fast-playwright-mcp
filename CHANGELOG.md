@@ -53,6 +53,10 @@ This fork descends from [`tontoko/fast-playwright-mcp`](https://github.com/tonto
   page JS) and is a security escalation we chose not to enable by default.
 
 ### Fixed
+- **`--save-trace` no longer crashes the server.** Playwright 1.61's `startTraceViewerServer()` throws
+  when called without options; the trace-viewer startup (which only prints a convenience URL) is now
+  guarded so a viewer failure can't take down the server. The trace file is still saved via context
+  tracing.
 - **element-discovery CSS selector generation** is now robust to modern markup: per-class
   `CSS.escape()` for Tailwind-style names (`hover:text-primary`, `text-[13px]`, `w-1/2`), `classList`
   instead of `className` (handles SVG `SVGAnimatedString`), and `try/catch` guards around selector

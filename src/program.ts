@@ -153,14 +153,24 @@ program
       logServerStart();
       await start(serverBackendFactory, config.server);
       if (config.saveTrace) {
-        const server = await startTraceViewerServer();
-        const urlPrefix = server.urlPrefix('human-readable');
-        const url =
-          urlPrefix +
-          '/trace/index.html?trace=' +
-          config.browser.launchOptions.tracesDir +
-          '/trace.json';
-        programDebug(`Trace viewer available at: ${url}`);
+        // The trace viewer only prints a convenience URL; the trace itself is
+        // saved via context tracing. Playwright 1.61's startTraceViewerServer
+        // throws when called without options, so guard it — a viewer failure
+        // must not take down the whole server.
+        try {
+          const server = await startTraceViewerServer();
+          const urlPrefix = server.urlPrefix('human-readable');
+          const url =
+            urlPrefix +
+            '/trace/index.html?trace=' +
+            config.browser.launchOptions.tracesDir +
+            '/trace.json';
+          programDebug(`Trace viewer available at: ${url}`);
+        } catch (error) {
+          programDebug(
+            `Trace viewer unavailable: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
       }
     } catch (error) {
       // CLI action failed - output error to stderr and exit with error code
