@@ -43,6 +43,7 @@ export class Context {
   private readonly _browserContextFactory: BrowserContextFactory;
   private readonly _tabs: Tab[] = [];
   private readonly _routes: RouteEntry[] = [];
+  private _interactiveTracing = false;
   private _currentTab: Tab | undefined;
   private readonly _clientInfo: ClientInfo;
   private _batchExecutor: BatchExecutor | undefined;
@@ -141,6 +142,27 @@ export class Context {
     this._routes.length = 0;
     this._routes.push(...keep);
     return toRemove.length;
+  }
+  async startTracing(): Promise<void> {
+    if (this.config.saveTrace) {
+      throw new Error(
+        'Cannot start interactive tracing while --save-trace is enabled; the session is already being traced.'
+      );
+    }
+    if (this._interactiveTracing) {
+      throw new Error('Tracing is already started');
+    }
+    const browserContext = await this.ensureBrowserContext();
+    await browserContext.tracing.start({ screenshots: true, snapshots: true });
+    this._interactiveTracing = true;
+  }
+  async stopTracing(path: string): Promise<void> {
+    if (!this._interactiveTracing) {
+      throw new Error('Tracing is not started');
+    }
+    const browserContext = await this.ensureBrowserContext();
+    await browserContext.tracing.stop({ path });
+    this._interactiveTracing = false;
   }
   async closeTab(index: number | undefined): Promise<string> {
     const tab = index === undefined ? this._currentTab : this._tabs[index];

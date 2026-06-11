@@ -44,6 +44,12 @@ This fork descends from [`tontoko/fast-playwright-mcp`](https://github.com/tonto
   fulfill a mock response or continue with header edits), `browser_route_list`, `browser_unroute`, and
   `browser_network_state_set` (toggle online/offline). Routes are tracked on the `Context` so they
   persist across navigations.
+- **More ported tools**: `browser_press_sequentially` (page-level type, key-by-key) and
+  `browser_console_clear` (core); `browser_generate_locator` (`--caps=testing`); `browser_get_config`
+  (`--caps=config`, dumps the resolved config); and interactive tracing `browser_start_tracing` /
+  `browser_stop_tracing` (`--caps=devtools`, saves a `.zip` trace; guarded against `--save-trace`).
+  `browser_run_code` was intentionally **not** ported — it executes arbitrary Node code (not just
+  page JS) and is a security escalation we chose not to enable by default.
 
 ### Fixed
 - **element-discovery CSS selector generation** is now robust to modern markup: per-class

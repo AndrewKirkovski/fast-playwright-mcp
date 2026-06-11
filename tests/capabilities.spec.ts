@@ -49,6 +49,8 @@ const BASE_BROWSER_TOOLS = [
   'browser_keydown',
   'browser_keyup',
   'browser_reload',
+  'browser_console_clear',
+  'browser_press_sequentially',
 ];
 
 test('test snapshot tool list', async ({ client }) => {

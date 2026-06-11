@@ -204,9 +204,38 @@ const verifyValue = defineTabTool({
   },
 });
 
+const generateLocatorTool = defineTabTool({
+  capability: 'testing',
+  schema: {
+    name: 'browser_generate_locator',
+    title: 'Generate locator',
+    description:
+      'Resolve the given selectors and return the Playwright locator string, for building test code',
+    inputSchema: z.object({
+      selectors: selectorsSchema,
+      diveInIframes: diveInIframesSchema,
+    }),
+    type: 'readOnly',
+  },
+  handle: async (tab, params, response) => {
+    const locator = await resolveOrNull(
+      tab,
+      params.selectors,
+      'Element not found',
+      params.diveInIframes,
+      response
+    );
+    if (!locator) {
+      return;
+    }
+    response.addResult(`page.${await generateLocator(locator)}`);
+  },
+});
+
 export default [
   verifyElementVisible,
   verifyTextVisible,
   verifyListVisible,
   verifyValue,
+  generateLocatorTool,
 ];

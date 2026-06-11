@@ -24,7 +24,9 @@ export type ToolCapability =
   | 'pdf'
   | 'storage'
   | 'testing'
-  | 'network';
+  | 'network'
+  | 'config'
+  | 'devtools';
 
 export type Config = {
   /**

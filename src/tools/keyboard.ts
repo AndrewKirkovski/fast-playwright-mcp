@@ -149,4 +149,33 @@ const keyup = defineTabTool({
     await handleSnapshotExpectation(tab, params.expectation, response);
   },
 });
-export default [pressKey, type, keydown, keyup];
+const pressSequentially = defineTabTool({
+  capability: 'core',
+  schema: {
+    name: 'browser_press_sequentially',
+    title: 'Type text key by key',
+    description:
+      'Type text one character at a time via the keyboard (page-level, no element target). Use browser_type to fill a specific field.',
+    inputSchema: z.object({
+      text: z.string().describe('Text to type'),
+      submit: z
+        .boolean()
+        .optional()
+        .describe('Press Enter after typing if true'),
+      expectation: expectationSchema.describe('Page state config'),
+    }),
+    type: 'destructive',
+  },
+  handle: async (tab, params, response) => {
+    response.addCode(`await page.keyboard.type(${quote(params.text)});`);
+    await tab.waitForCompletion(async () => {
+      await tab.page.keyboard.type(params.text);
+      if (params.submit) {
+        response.addCode("await page.keyboard.press('Enter');");
+        await tab.page.keyboard.press('Enter');
+      }
+    });
+    await handleSnapshotExpectation(tab, params.expectation, response);
+  },
+});
+export default [pressKey, type, keydown, keyup, pressSequentially];

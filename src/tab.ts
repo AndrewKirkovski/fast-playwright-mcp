@@ -327,6 +327,10 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   consoleMessages(): ConsoleMessage[] {
     return this._consoleMessages;
   }
+  clearConsoleMessages(): void {
+    this._consoleMessages.length = 0;
+    this._recentConsoleMessages.length = 0;
+  }
   requests(): Map<playwright.Request, playwright.Response | null> {
     return this._requests;
   }

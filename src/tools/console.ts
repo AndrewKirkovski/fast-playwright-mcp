@@ -52,4 +52,20 @@ const console = defineTabTool({
     }
   },
 });
-export default [console];
+const consoleClear = defineTabTool({
+  capability: 'core',
+  schema: {
+    name: 'browser_console_clear',
+    title: 'Clear console messages',
+    description:
+      'Clear the collected console message buffer for the current tab',
+    inputSchema: z.object({}),
+    type: 'readOnly',
+  },
+  handle: (tab, _params, response) => {
+    tab.clearConsoleMessages();
+    response.addResult('Console messages cleared');
+    return Promise.resolve();
+  },
+});
+export default [console, consoleClear];
