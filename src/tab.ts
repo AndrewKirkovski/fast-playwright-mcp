@@ -18,9 +18,6 @@ import { logUnhandledError } from './utils/log.js';
 
 // Regex constants
 
-type PageEx = playwright.Page & {
-  _snapshotForAI: () => Promise<{ full: string }>;
-};
 export const TabEvents = {
   modalState: 'modalState',
 };
@@ -348,14 +345,17 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   ): Promise<TabSnapshot> {
     let tabSnapshot: TabSnapshot | undefined;
     const modalStates = await this._raceAgainstModalStates(async () => {
-      const result = await (this.page as PageEx)._snapshotForAI();
+      // Playwright 1.61 replaced the internal page._snapshotForAI() (which
+      // returned { full }) with the public page.ariaSnapshot({ mode: 'ai' }),
+      // returning the ref-annotated snapshot string directly.
+      const fullSnapshot = await this.page.ariaSnapshot({ mode: 'ai' });
       let snapshot: string;
       if (selector) {
         // Extract the part of the snapshot that matches the selector
-        snapshot = this._extractPartialSnapshot(result.full, selector);
+        snapshot = this._extractPartialSnapshot(fullSnapshot, selector);
       } else {
         // Full snapshot if no selector specified
-        snapshot = result.full;
+        snapshot = fullSnapshot;
       }
       // Apply maxLength truncation with word boundary consideration
       if (maxLength && snapshot.length > maxLength) {
