@@ -34,11 +34,14 @@ This fork descends from [`tontoko/fast-playwright-mcp`](https://github.com/tonto
 - Bumped `@modelcontextprotocol/sdk` `^1.16.0` → `^1.29.0` (resolved 1.29.0).
 - Bumped `ws` `^8.18.1` → `^8.21.0`, clearing GHSA-58qx-3vcg-4xpx (uninitialized memory disclosure).
 
-### In progress (not yet on `main`)
-- **Playwright 1.61-alpha roll** — branch `chore/playwright-1.61-roll`. 1.61 bundled playwright-core
-  internals and renamed/removed several internal methods this fork used; tracked as Phase 0 of the
-  upstream port plan. Internal reach-throughs are being centralized in
-  `src/utils/playwright-internal.ts`; snapshot capture migrated to public `page.ariaSnapshot({ mode: 'ai' })`.
+### Changed
+- **Rolled Playwright to `1.61.0-alpha-1781023400000`** (from `1.58.0-alpha-1766189059000`; tracks
+  microsoft v0.0.76). 1.61 bundled playwright-core's internals and removed several internal methods
+  this fork relied on. All internal reach-throughs are now centralized behind a typed declaration in
+  `src/utils/playwright-internal.ts` (`asLocator`, `registry`, `registryDirectory`,
+  `startTraceViewerServer` via `lib/coreBundle`), and snapshot / evaluate / code-gen moved onto public
+  APIs: `page.ariaSnapshot({ mode: 'ai' })`, `page`/`locator.evaluate(fn, expr)`, and
+  `locator.normalize()`. No behavioral changes to tools.
 
 ## [0.1.3] — baseline (inherited from tontoko/fast-playwright-mcp)
 
