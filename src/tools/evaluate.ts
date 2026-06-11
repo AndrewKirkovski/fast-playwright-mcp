@@ -71,14 +71,23 @@ const evaluate = defineTabTool({
 
     await tab.waitForCompletion(async () => {
       try {
-        // Use Playwright's internal _evaluateFunction which safely handles string functions
-        // This method is used by the upstream microsoft/playwright-mcp implementation
-        interface ReceiverWithEvaluate {
-          _evaluateFunction(functionString: string): Promise<unknown>;
+        // Playwright 1.61 removed the internal _evaluateFunction. Run the
+        // caller's function string through the public evaluate() API,
+        // constructing it inside the page context (mirrors upstream).
+        let result: unknown;
+        if (locator) {
+          result = await locator.evaluate((element, expr) => {
+            // biome-ignore lint/security/noGlobalEval: executes the caller's function string inside the page context
+            const value = eval(`(${expr})`);
+            return typeof value === 'function' ? value(element) : value;
+          }, params.function);
+        } else {
+          result = await tab.page.evaluate((expr) => {
+            // biome-ignore lint/security/noGlobalEval: executes the caller's function string inside the page context
+            const value = eval(`(${expr})`);
+            return typeof value === 'function' ? value() : value;
+          }, params.function);
         }
-        const receiver = (locator ??
-          tab.page) as unknown as ReceiverWithEvaluate;
-        const result = await receiver._evaluateFunction(params.function);
         const stringifiedResult = JSON.stringify(result, null, 2);
         response.addResult(stringifiedResult ?? 'undefined');
       } catch (error) {

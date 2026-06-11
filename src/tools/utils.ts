@@ -2,7 +2,6 @@ import type * as playwright from 'playwright';
 import { TIMEOUTS } from '../config/constants.js';
 import type { Tab } from '../tab.js';
 import { toolsUtilsDebug } from '../utils/log.js';
-import { asLocator } from '../utils/playwright-internal.js';
 export async function waitForCompletion<R>(
   tab: Tab,
   callback: () => Promise<R>
@@ -107,17 +106,16 @@ export async function generateLocator(
   locator: playwright.Locator
 ): Promise<string> {
   try {
-    const { resolvedSelector } = await (
-      locator as unknown as {
-        _resolveSelector: () => Promise<{ resolvedSelector: string }>;
-      }
-    )._resolveSelector();
-    return asLocator('javascript', resolvedSelector);
+    // Playwright 1.61 removed the internal locator._resolveSelector(). The
+    // public normalize() is the equivalent: it resolves an aria-ref locator to
+    // a concrete, readable locator whose toString() is the generated code.
+    const normalized = await locator.normalize();
+    return normalized.toString();
   } catch (error) {
     toolsUtilsDebug('Locator generation failed:', error);
-    throw new Error(
-      'Ref not found, likely because element was removed. Use browser_snapshot to see what elements are currently on the page.'
-    );
+    // Code generation is for display only — never fail the action over it.
+    // The action itself will surface a precise error if the element is gone.
+    return locator.toString();
   }
 }
 export async function callOnPageNoTrace<T>(
