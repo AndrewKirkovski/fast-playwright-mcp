@@ -104,14 +104,24 @@ const cookieSet = defineTool({
   },
   handle: async (context, params, response) => {
     const browserContext = await context.ensureBrowserContext();
-    const tab = await context.ensureTab();
-    const url = new URL(tab.page.url());
+    let domain = params.domain;
+    if (!domain) {
+      const url = context.currentTab()?.page.url();
+      const host = url && url !== 'about:blank' ? new URL(url).hostname : '';
+      if (!host) {
+        response.addError(
+          'Cookie domain is required when no page is loaded. Provide `domain` or navigate to a page first.'
+        );
+        return;
+      }
+      domain = host;
+    }
     const cookie: Parameters<
       playwright.BrowserContext['addCookies']
     >[0][number] = {
       name: params.name,
       value: params.value,
-      domain: params.domain ?? url.hostname,
+      domain,
       path: params.path ?? '/',
       ...(params.expires === undefined ? {} : { expires: params.expires }),
       ...(params.httpOnly === undefined ? {} : { httpOnly: params.httpOnly }),
@@ -119,6 +129,7 @@ const cookieSet = defineTool({
       ...(params.sameSite === undefined ? {} : { sameSite: params.sameSite }),
     };
     await browserContext.addCookies([cookie]);
+    response.addResult(`Cookie '${params.name}' set`);
     response.addCode(
       `await page.context().addCookies([${JSON.stringify(cookie)}]);`
     );

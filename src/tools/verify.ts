@@ -129,7 +129,9 @@ const verifyListVisible = defineTabTool({
       return;
     }
     const counts = await Promise.all(
-      params.items.map((item) => locator.getByText(item).count())
+      params.items.map((item) =>
+        locator.getByText(item, { exact: true }).count()
+      )
     );
     const missing = params.items.filter((_, i) => counts[i] === 0);
     if (missing.length > 0) {

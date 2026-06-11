@@ -12,6 +12,11 @@ function parseHeaderList(
   return Object.fromEntries(
     headers.map((h) => {
       const colon = h.indexOf(':');
+      if (colon === -1) {
+        throw new Error(
+          `Invalid header "${h}" — expected "Name: Value" format.`
+        );
+      }
       return [h.slice(0, colon).trim(), h.slice(colon + 1).trim()];
     })
   );
@@ -76,7 +81,10 @@ const route = defineTool({
           Object.entries(headers).filter(([k]) => !drop.has(k.toLowerCase()))
         );
       }
-      await r.continue({ headers });
+      // Use fallback (not continue) so other matching handlers — notably the
+      // config's allowedOrigins/blockedOrigins routes registered earlier — still
+      // run. continue() is terminal and would let a user route bypass a block.
+      await r.fallback({ headers });
     };
 
     const entry: RouteEntry = {

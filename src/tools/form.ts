@@ -57,7 +57,9 @@ async function fillField(
     response.addCode(`${source}.setChecked(${checked});`);
   } else {
     await locator.selectOption({ label: field.value });
-    response.addCode(`${source}.selectOption(${quote(field.value)});`);
+    response.addCode(
+      `${source}.selectOption({ label: ${quote(field.value)} });`
+    );
   }
 }
 

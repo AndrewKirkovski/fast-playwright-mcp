@@ -329,7 +329,10 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   }
   clearConsoleMessages(): void {
     this._consoleMessages.length = 0;
-    this._recentConsoleMessages.length = 0;
+    // Reassign (not truncate) to match the snapshot path, which hands out the
+    // array reference and then replaces the field — truncating could empty an
+    // in-flight snapshot's captured messages.
+    this._recentConsoleMessages = [];
   }
   requests(): Map<playwright.Request, playwright.Response | null> {
     return this._requests;

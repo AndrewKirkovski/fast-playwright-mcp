@@ -44,6 +44,7 @@ export class Context {
   private readonly _tabs: Tab[] = [];
   private readonly _routes: RouteEntry[] = [];
   private _interactiveTracing = false;
+  private _offline = false;
   private _currentTab: Tab | undefined;
   private readonly _clientInfo: ClientInfo;
   private _batchExecutor: BatchExecutor | undefined;
@@ -127,21 +128,30 @@ export class Context {
     return this._routes;
   }
   async removeRoute(pattern?: string): Promise<number> {
-    const browserContext = await this.ensureBrowserContext();
     const toRemove = pattern
       ? this._routes.filter((r) => r.pattern === pattern)
       : this._routes.slice();
-    await Promise.all(
-      toRemove.map((entry) =>
-        browserContext.unroute(entry.pattern, entry.handler)
-      )
-    );
+    // Only unroute on a live context; if it was torn down the routes are already
+    // gone — just reconcile the in-memory registry (avoids recreating a context).
+    if (this._browserContextPromise && toRemove.length > 0) {
+      const browserContext = await this.ensureBrowserContext();
+      await Promise.all(
+        toRemove.map((entry) =>
+          browserContext.unroute(entry.pattern, entry.handler)
+        )
+      );
+    }
     const keep = pattern
       ? this._routes.filter((r) => r.pattern !== pattern)
       : [];
     this._routes.length = 0;
     this._routes.push(...keep);
     return toRemove.length;
+  }
+  async setOffline(offline: boolean): Promise<void> {
+    this._offline = offline;
+    const browserContext = await this.ensureBrowserContext();
+    await browserContext.setOffline(offline);
   }
   async startTracing(): Promise<void> {
     if (this.config.saveTrace) {
@@ -153,16 +163,27 @@ export class Context {
       throw new Error('Tracing is already started');
     }
     const browserContext = await this.ensureBrowserContext();
-    await browserContext.tracing.start({ screenshots: true, snapshots: true });
     this._interactiveTracing = true;
+    try {
+      await browserContext.tracing.start({
+        screenshots: true,
+        snapshots: true,
+      });
+    } catch (error) {
+      this._interactiveTracing = false;
+      throw error;
+    }
   }
   async stopTracing(path: string): Promise<void> {
     if (!this._interactiveTracing) {
       throw new Error('Tracing is not started');
     }
     const browserContext = await this.ensureBrowserContext();
-    await browserContext.tracing.stop({ path });
-    this._interactiveTracing = false;
+    try {
+      await browserContext.tracing.stop({ path });
+    } finally {
+      this._interactiveTracing = false;
+    }
   }
   async closeTab(index: number | undefined): Promise<string> {
     const tab = index === undefined ? this._currentTab : this._tabs[index];
@@ -243,6 +264,14 @@ export class Context {
       if (this.config.saveTrace) {
         await browserContext.tracing.stop();
       }
+      if (this._interactiveTracing) {
+        // Best-effort: discard the in-progress interactive trace when the
+        // context is torn down (e.g. last tab closed) so state stays consistent.
+        await browserContext.tracing.stop().catch(() => {
+          // ignore
+        });
+        this._interactiveTracing = false;
+      }
       await close();
     });
   }
@@ -296,6 +325,16 @@ export class Context {
     );
     const { browserContext } = result;
     await this._setupRequestInterception(browserContext);
+    // Re-apply user routes and offline state so they survive a tab-close ->
+    // lazy-recreate cycle (the browser context is rebuilt, but Context persists).
+    await Promise.all(
+      this._routes.map((entry) =>
+        browserContext.route(entry.pattern, entry.handler)
+      )
+    );
+    if (this._offline) {
+      await browserContext.setOffline(true);
+    }
     if (this.sessionLog) {
       await InputRecorder.create(this, browserContext);
     }

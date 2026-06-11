@@ -224,9 +224,8 @@ const networkState = defineTool({
     type: 'destructive',
   },
   handle: async (context, params, response) => {
-    const browserContext = await context.ensureBrowserContext();
     const offline = params.state === 'offline';
-    await browserContext.setOffline(offline);
+    await context.setOffline(offline);
     response.addResult(`Network state set to ${params.state}`);
     response.addCode(`await page.context().setOffline(${offline});`);
   },
