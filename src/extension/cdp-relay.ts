@@ -13,10 +13,7 @@ import type { ClientInfo } from '../browser-context-factory.js';
 import { httpAddressToString } from '../http-server.js';
 import { ManualPromise } from '../manual-promise.js';
 import { cdpRelayDebug, logUnhandledError } from '../utils/log.js';
-
-//
-// @ts-expect-error - playwright internal module
-const { registry } = await import('playwright-core/lib/server/registry/index');
+import { registry } from '../utils/playwright-internal.js';
 
 // Regex constants for performance
 const HTTP_TO_WS_REGEX = /^http/;

@@ -1,9 +1,8 @@
 import type * as playwright from 'playwright';
-// @ts-expect-error - playwright-core internal module without proper types
-import { asLocator } from 'playwright-core/lib/utils';
 import { TIMEOUTS } from '../config/constants.js';
 import type { Tab } from '../tab.js';
 import { toolsUtilsDebug } from '../utils/log.js';
+import { asLocator } from '../utils/playwright-internal.js';
 export async function waitForCompletion<R>(
   tab: Tab,
   callback: () => Promise<R>
