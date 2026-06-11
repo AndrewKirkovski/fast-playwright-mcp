@@ -1,7 +1,10 @@
 import type * as playwright from 'playwright';
 import { z } from 'zod';
 import { expectationSchema } from '../schemas/expectation.js';
-import { elementSelectorSchema } from '../types/selectors.js';
+import {
+  diveInIframesSchema,
+  elementSelectorSchema,
+} from '../types/selectors.js';
 import { quote } from '../utils/codegen.js';
 import { defineTabTool } from './tool.js';
 import { generateLocator } from './utils.js';
@@ -24,6 +27,7 @@ const evaluateSchema = z.object({
     .describe(
       'Optional element selectors. If provided, function receives element as parameter'
     ),
+  diveInIframes: diveInIframesSchema,
   expectation: expectationSchema.describe(
     'Page state config. false for data extraction, true for DOM changes'
   ),
@@ -43,7 +47,8 @@ const evaluate = defineTabTool({
 
     if (params.selectors && params.selectors.length > 0) {
       const resolutionResults = await tab.resolveElementLocators(
-        params.selectors
+        params.selectors,
+        { diveInIframes: params.diveInIframes }
       );
       const successfulResults = resolutionResults.filter(
         (r) => r.locator && !r.error

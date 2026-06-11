@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { expectationSchema } from '../schemas/expectation.js';
-import { elementSelectorSchema } from '../types/selectors.js';
+import {
+  diveInIframesSchema,
+  elementSelectorSchema,
+} from '../types/selectors.js';
 import { formatObject } from '../utils/codegen.js';
 import {
   handleSnapshotExpectation,
@@ -55,6 +58,7 @@ export const selectorsSchema = z
 
 const clickSchema = z.object({
   selectors: selectorsSchema,
+  diveInIframes: diveInIframesSchema,
   doubleClick: z.boolean().optional().describe('Double-click if true'),
   button: z
     .enum(['left', 'right', 'middle'])
@@ -77,7 +81,8 @@ const click = defineTabTool({
     const { locator } = await resolveFirstElement(
       tab,
       params.selectors,
-      'Failed to resolve any element selectors'
+      'Failed to resolve any element selectors',
+      params.diveInIframes
     );
     const button = params.button;
     const buttonAttr = button ? `{ button: '${button}' }` : '';
@@ -117,6 +122,7 @@ const drag = defineTabTool({
       endSelectors: selectorsSchema.describe(
         'Target element selectors for drag end'
       ),
+      diveInIframes: diveInIframesSchema,
       expectation: expectationSchema.describe(
         'Page state after drag. Use batch_execute for workflows'
       ),
@@ -127,7 +133,8 @@ const drag = defineTabTool({
     const { startLocator, endLocator } = await resolveDragElements(
       tab,
       params.startSelectors,
-      params.endSelectors
+      params.endSelectors,
+      params.diveInIframes
     );
 
     await tab.waitForCompletion(async () => {
@@ -147,6 +154,7 @@ const hover = defineTabTool({
     description: 'Hover over element on page',
     inputSchema: z.object({
       selectors: selectorsSchema,
+      diveInIframes: diveInIframesSchema,
       expectation: expectationSchema.describe(
         'Page state after hover. Use batch_execute for hover→click'
       ),
@@ -154,7 +162,12 @@ const hover = defineTabTool({
     type: 'readOnly',
   },
   handle: async (tab, params, response) => {
-    const { locator } = await resolveFirstElement(tab, params.selectors);
+    const { locator } = await resolveFirstElement(
+      tab,
+      params.selectors,
+      undefined,
+      params.diveInIframes
+    );
 
     response.addCode(`await page.${await generateLocator(locator)}.hover();`);
 
@@ -165,6 +178,7 @@ const hover = defineTabTool({
 });
 const selectOptionSchema = z.object({
   selectors: selectorsSchema,
+  diveInIframes: diveInIframesSchema,
   values: z.array(z.string()).describe('Values to select (array)'),
   expectation: expectationSchema.describe(
     'Page state after selection. Use batch_execute for forms'
@@ -180,7 +194,12 @@ const selectOption = defineTabTool({
     type: 'destructive',
   },
   handle: async (tab, params, response) => {
-    const { locator } = await resolveFirstElement(tab, params.selectors);
+    const { locator } = await resolveFirstElement(
+      tab,
+      params.selectors,
+      undefined,
+      params.diveInIframes
+    );
 
     response.addCode(
       `await page.${await generateLocator(locator)}.selectOption(${formatObject(params.values)});`

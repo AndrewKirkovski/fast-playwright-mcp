@@ -1,10 +1,11 @@
-import type { Locator, Page } from 'playwright';
+import type { Frame, Locator, Page } from 'playwright';
 import {
   type BatchResolutionOptions,
   type CategorizedSelectors,
   type ElementMetadata,
   type ElementSelector,
   type EnhancedSelectorResult,
+  type FrameStep,
   isCSSSelector,
   isRefSelector,
   isRoleSelector,
@@ -23,12 +24,147 @@ const GENERIC_TAG_SELECTOR = /^[a-z]+$/;
  * Core service for resolving element selectors into Playwright locators
  * Handles parallel resolution and provides confidence scoring
  */
+export type FrameMatchSink = (
+  frame: { depth: number; path: FrameStep[] },
+  selector: ElementSelector
+) => void;
+
 export class SelectorResolver {
   private readonly page: Page;
   private readonly defaultTimeoutMs: number = 3000;
+  // Optional sink notified whenever a selector resolves inside a child iframe.
+  // The Tab wires this to its frame-notice buffer so every selector-based tool
+  // surfaces the same "matched inside an iframe" note centrally.
+  private readonly onFrameMatch?: FrameMatchSink;
 
-  constructor(page: Page) {
+  constructor(page: Page, options: { onFrameMatch?: FrameMatchSink } = {}) {
     this.page = page;
+    this.onFrameMatch = options.onFrameMatch;
+  }
+
+  /**
+   * Fire the frame-match sink for the result the caller will actually use — the
+   * first successful one (callers pick `successfulResults[0]`). Doing this once,
+   * after resolution settles, avoids (a) misattributing a note to a non-chosen
+   * fallback selector that happened to match in a frame, and (b) a timeout-race
+   * where a per-leaf sink call lands after the tool already drained its notices.
+   */
+  /** Suffix for multi-match errors when the matches live inside an iframe, so
+   *  the message isn't misleadingly top-document-flavored. */
+  private _frameHint(root: Page | Frame): string {
+    return root === this.page
+      ? ''
+      : '\nNote: these elements are inside an iframe.';
+  }
+
+  private _notifyChosenFrame(results: SelectorResolutionResult[]): void {
+    if (!this.onFrameMatch) {
+      return;
+    }
+    const chosen = results.find((r) => r.locator && !r.error);
+    if (chosen?.frame) {
+      this.onFrameMatch(chosen.frame, chosen.selector);
+    }
+  }
+
+  /**
+   * Build a locator from `make`. By default (`diveInIframes` false) this only
+   * searches the top document, exactly like the original `this.page.locator()`.
+   * When `diveInIframes` is true it searches the main frame first and, only if
+   * the top document has no match, falls back to every child `<iframe>` (in
+   * parallel) — main keeps priority so top-level matches are unchanged. The
+   * main frame's `count()` is never swallowed, so genuine selector errors (e.g.
+   * invalid CSS) still surface instead of being masked as "not found".
+   */
+  private async _locateAcrossFrames(
+    make: (root: Page | Frame) => Locator,
+    diveInIframes: boolean
+  ): Promise<{ locator: Locator; count: number; root: Page | Frame }> {
+    // Try the main frame first (the common case).
+    const mainLocator = make(this.page);
+    const mainCount = await mainLocator.count();
+    const childFrames = diveInIframes
+      ? this.page.frames().filter((frame) => frame !== this.page.mainFrame())
+      : [];
+    if (mainCount > 0 || childFrames.length === 0) {
+      return { locator: mainLocator, count: mainCount, root: this.page };
+    }
+
+    // Top document had no match — fall back to the child iframes, probing them
+    // in parallel. Per-frame count() errors are swallowed so one bad/detached
+    // frame can't abort resolution; document order breaks ties.
+    const candidates = await Promise.all(
+      childFrames.map(async (frame) => {
+        const locator = make(frame);
+        const count = await locator.count().catch(() => 0);
+        return { locator, count, root: frame };
+      })
+    );
+
+    const hit = candidates.find((candidate) => candidate.count > 0);
+    return hit ?? { locator: mainLocator, count: 0, root: this.page };
+  }
+
+  /**
+   * Describe where a match was found: `undefined` for the top document, else the
+   * full chain of iframes from the top document down to the matched frame. Each
+   * step carries the `<iframe>`'s standard identifying attributes (`name` /
+   * `title` / `id`) plus its URL — for `srcdoc` frames the URL is `about:srcdoc`,
+   * so `name`/`title` (which apps are encouraged to set) are what identify them.
+   */
+  private async _frameInfo(
+    root: Page | Frame
+  ): Promise<{ depth: number; path: FrameStep[] } | undefined> {
+    if (root === this.page) {
+      return;
+    }
+    const main = this.page.mainFrame();
+    // Walk from the matched frame up to (but excluding) the main frame.
+    const chain: Frame[] = [];
+    let current: Frame | null = root as Frame;
+    while (current && current !== main) {
+      chain.push(current);
+      current = current.parentFrame();
+    }
+    chain.reverse(); // top-most child first → matched frame last
+
+    const path = await Promise.all(
+      chain.map(async (frame) => {
+        const step: FrameStep = {};
+        // Every accessor below can throw if the frame detaches mid-resolution; a
+        // partial (or empty) step is fine and must NOT fail the whole match.
+        try {
+          const name = frame.name();
+          if (name) {
+            step.name = name;
+          }
+          const url = frame.url();
+          // about:blank / about:srcdoc aren't useful labels (every srcdoc frame
+          // is about:srcdoc) — apps should set name/title to identify them.
+          if (url && url !== 'about:blank' && url !== 'about:srcdoc') {
+            step.url = url;
+          }
+          // The <iframe> element's standard attributes are the only stable label
+          // for opaque (srcdoc) frames — read them from the parent document.
+          const element = await frame.frameElement();
+          const [title, id] = await Promise.all([
+            element.getAttribute('title'),
+            element.getAttribute('id'),
+          ]);
+          if (title) {
+            step.title = title;
+          }
+          if (id) {
+            step.id = id;
+          }
+        } catch {
+          // Frame detached mid-resolution — keep whatever was gathered.
+        }
+        return step;
+      })
+    );
+
+    return { depth: path.length, path };
   }
 
   /**
@@ -43,6 +179,7 @@ export class SelectorResolver {
       timeoutMs = this.defaultTimeoutMs,
       continueOnError = true,
       executionStrategy = 'hybrid',
+      diveInIframes = false,
     } = options;
 
     tabDebug(
@@ -56,26 +193,34 @@ export class SelectorResolver {
     const categorized = this._categorizeSelectors(validatedSelectors);
 
     try {
+      let results: SelectorResolutionResult[];
       switch (executionStrategy) {
         case 'parallel':
-          return await this._resolveParallel(
+          results = await this._resolveParallel(
             categorized,
             timeoutMs,
-            continueOnError
+            continueOnError,
+            diveInIframes
           );
+          break;
         case 'sequential':
-          return await this._resolveSequential(
+          results = await this._resolveSequential(
             categorized,
             timeoutMs,
-            continueOnError
+            continueOnError,
+            diveInIframes
           );
+          break;
         default:
-          return await this._resolveHybrid(
+          results = await this._resolveHybrid(
             categorized,
             timeoutMs,
-            continueOnError
+            continueOnError,
+            diveInIframes
           );
       }
+      this._notifyChosenFrame(results);
+      return results;
     } catch (error) {
       tabDebug(
         `Selector resolution failed after ${Date.now() - startTime}ms:`,
@@ -90,9 +235,10 @@ export class SelectorResolver {
    */
   async resolveSingleSelector(
     selector: ElementSelector,
-    options: { timeoutMs?: number } = {}
+    options: { timeoutMs?: number; diveInIframes?: boolean } = {}
   ): Promise<EnhancedSelectorResult> {
-    const { timeoutMs = this.defaultTimeoutMs } = options;
+    const { timeoutMs = this.defaultTimeoutMs, diveInIframes = false } =
+      options;
     const startTime = Date.now();
 
     try {
@@ -100,11 +246,15 @@ export class SelectorResolver {
 
       const result = await this._resolveSelectorWithTimeout(
         selector,
-        timeoutMs
+        timeoutMs,
+        diveInIframes
       );
 
       // Enhance with metadata if resolution succeeded
       if (result.locator && !result.error) {
+        if (result.frame) {
+          this.onFrameMatch?.(result.frame, selector);
+        }
         const metadata = await this._extractElementMetadata(result.locator);
         const suggestions = this._generateSuggestions(selector, metadata);
 
@@ -181,7 +331,8 @@ export class SelectorResolver {
   private async _resolveParallel(
     categorized: CategorizedSelectors,
     timeoutMs: number,
-    continueOnError: boolean
+    continueOnError: boolean,
+    diveInIframes: boolean
   ): Promise<SelectorResolutionResult[]> {
     const allSelectors = [
       ...categorized.refs,
@@ -192,7 +343,11 @@ export class SelectorResolver {
 
     const promises = allSelectors.map(async (selector) => {
       try {
-        return await this._resolveSelectorWithTimeout(selector, timeoutMs);
+        return await this._resolveSelectorWithTimeout(
+          selector,
+          timeoutMs,
+          diveInIframes
+        );
       } catch (error) {
         if (!continueOnError) {
           throw error;
@@ -210,7 +365,8 @@ export class SelectorResolver {
   private async _resolveSequential(
     categorized: CategorizedSelectors,
     timeoutMs: number,
-    continueOnError: boolean
+    continueOnError: boolean,
+    diveInIframes: boolean
   ): Promise<SelectorResolutionResult[]> {
     const allSelectors = [
       ...categorized.refs,
@@ -225,7 +381,11 @@ export class SelectorResolver {
       // Add small delay for each subsequent selector to maintain sequential nature
       await new Promise((resolve) => setTimeout(resolve, index * 10));
       try {
-        return await this._resolveSelectorWithTimeout(selector, timeoutMs);
+        return await this._resolveSelectorWithTimeout(
+          selector,
+          timeoutMs,
+          diveInIframes
+        );
       } catch (error) {
         if (!continueOnError) {
           throw error;
@@ -243,7 +403,8 @@ export class SelectorResolver {
   private async _resolveHybrid(
     categorized: CategorizedSelectors,
     timeoutMs: number,
-    continueOnError: boolean
+    continueOnError: boolean,
+    diveInIframes: boolean
   ): Promise<SelectorResolutionResult[]> {
     const results: SelectorResolutionResult[] = [];
 
@@ -251,7 +412,11 @@ export class SelectorResolver {
     if (categorized.refs.length > 0) {
       const refPromises = categorized.refs.map(async (selector) => {
         try {
-          return await this._resolveSelectorWithTimeout(selector, timeoutMs);
+          return await this._resolveSelectorWithTimeout(
+            selector,
+            timeoutMs,
+            diveInIframes
+          );
         } catch (error) {
           if (!continueOnError) {
             throw error;
@@ -277,7 +442,11 @@ export class SelectorResolver {
       // Add small delay for each subsequent selector
       await new Promise((resolve) => setTimeout(resolve, index * 10));
       try {
-        return await this._resolveSelectorWithTimeout(selector, timeoutMs);
+        return await this._resolveSelectorWithTimeout(
+          selector,
+          timeoutMs,
+          diveInIframes
+        );
       } catch (error) {
         if (!continueOnError) {
           throw error;
@@ -297,7 +466,8 @@ export class SelectorResolver {
    */
   private async _resolveSelectorWithTimeout(
     selector: ElementSelector,
-    timeoutMs: number
+    timeoutMs: number,
+    diveInIframes: boolean
   ): Promise<SelectorResolutionResult> {
     const startTime = Date.now();
 
@@ -309,7 +479,7 @@ export class SelectorResolver {
 
     try {
       const result = await Promise.race([
-        this._resolveSingleSelectorInternal(selector),
+        this._resolveSingleSelectorInternal(selector, diveInIframes),
         timeoutPromise,
       ]);
 
@@ -326,22 +496,23 @@ export class SelectorResolver {
    * Internal selector resolution logic
    */
   private async _resolveSingleSelectorInternal(
-    selector: ElementSelector
+    selector: ElementSelector,
+    diveInIframes: boolean
   ): Promise<Omit<SelectorResolutionResult, 'resolutionTimeMs'>> {
     if (isRefSelector(selector)) {
       return await this._resolveRefSelector(selector);
     }
 
     if (isRoleSelector(selector)) {
-      return await this._resolveRoleSelector(selector);
+      return await this._resolveRoleSelector(selector, diveInIframes);
     }
 
     if (isCSSSelector(selector)) {
-      return await this._resolveCSSSelector(selector);
+      return await this._resolveCSSSelector(selector, diveInIframes);
     }
 
     if (isTextSelector(selector)) {
-      return await this._resolveTextSelector(selector);
+      return await this._resolveTextSelector(selector, diveInIframes);
     }
 
     throw new Error('Unknown selector type');
@@ -385,23 +556,31 @@ export class SelectorResolver {
   /**
    * Resolve role-based selectors with optional text matching
    */
-  private async _resolveRoleSelector(selector: {
-    role: string;
-    text?: string;
-  }): Promise<Omit<SelectorResolutionResult, 'resolutionTimeMs'>> {
+  private async _resolveRoleSelector(
+    selector: {
+      role: string;
+      text?: string;
+    },
+    diveInIframes: boolean
+  ): Promise<Omit<SelectorResolutionResult, 'resolutionTimeMs'>> {
     try {
-      let locator = this.page.getByRole(
-        selector.role as Parameters<typeof this.page.getByRole>[0]
-      );
-      let confidence: number = SelectorConfidence.MEDIUM;
-
-      // Add text filtering if specified
-      if (selector.text) {
-        locator = locator.filter({ hasText: selector.text });
-        confidence = SelectorConfidence.HIGH;
-      }
-
-      const count = await locator.count();
+      const {
+        locator,
+        count,
+        root: matchRoot,
+      } = await this._locateAcrossFrames((root) => {
+        let l = root.getByRole(
+          selector.role as Parameters<typeof this.page.getByRole>[0]
+        );
+        // Add text filtering if specified
+        if (selector.text) {
+          l = l.filter({ hasText: selector.text });
+        }
+        return l;
+      }, diveInIframes);
+      const confidence: number = selector.text
+        ? SelectorConfidence.HIGH
+        : SelectorConfidence.MEDIUM;
 
       if (count === 0) {
         const alternatives = await this._findRoleAlternatives(
@@ -443,7 +622,7 @@ export class SelectorResolver {
           selector,
           confidence: 0,
           strategy: ResolutionStrategy.ROLE_SEQUENTIAL,
-          error: `Multiple elements (${count}) found with role "${selector.role}". Please be more specific:\n${candidateDescriptions}\nConsider adding text filter or using a more specific selector.`,
+          error: `Multiple elements (${count}) found with role "${selector.role}". Please be more specific:\n${candidateDescriptions}\nConsider adding text filter or using a more specific selector.${this._frameHint(matchRoot)}`,
         };
       }
 
@@ -452,6 +631,7 @@ export class SelectorResolver {
         selector,
         confidence,
         strategy: ResolutionStrategy.ROLE_SEQUENTIAL,
+        frame: await this._frameInfo(matchRoot),
       };
     } catch (error) {
       throw new Error(
@@ -463,12 +643,21 @@ export class SelectorResolver {
   /**
    * Resolve CSS-based selectors
    */
-  private async _resolveCSSSelector(selector: {
-    css: string;
-  }): Promise<Omit<SelectorResolutionResult, 'resolutionTimeMs'>> {
+  private async _resolveCSSSelector(
+    selector: {
+      css: string;
+    },
+    diveInIframes: boolean
+  ): Promise<Omit<SelectorResolutionResult, 'resolutionTimeMs'>> {
     try {
-      const locator = this.page.locator(selector.css);
-      const count = await locator.count();
+      const {
+        locator,
+        count,
+        root: matchRoot,
+      } = await this._locateAcrossFrames(
+        (root) => root.locator(selector.css),
+        diveInIframes
+      );
 
       if (count === 0) {
         return {
@@ -510,7 +699,7 @@ export class SelectorResolver {
           selector,
           confidence: 0,
           strategy: ResolutionStrategy.CSS_PARALLEL,
-          error: `Multiple elements (${count}) found with CSS selector "${selector.css}". Please be more specific:\n${candidateDescriptions}\nConsider using a more specific selector like ID or adding :nth-child().`,
+          error: `Multiple elements (${count}) found with CSS selector "${selector.css}". Please be more specific:\n${candidateDescriptions}\nConsider using a more specific selector like ID or adding :nth-child().${this._frameHint(matchRoot)}`,
         };
       }
 
@@ -519,6 +708,7 @@ export class SelectorResolver {
         selector,
         confidence,
         strategy: ResolutionStrategy.CSS_PARALLEL,
+        frame: await this._frameInfo(matchRoot),
       };
     } catch (error) {
       throw new Error(
@@ -530,21 +720,26 @@ export class SelectorResolver {
   /**
    * Resolve text-based selectors with optional tag filtering
    */
-  private async _resolveTextSelector(selector: {
-    text: string;
-    tag?: string;
-  }): Promise<Omit<SelectorResolutionResult, 'resolutionTimeMs'>> {
+  private async _resolveTextSelector(
+    selector: {
+      text: string;
+      tag?: string;
+    },
+    diveInIframes: boolean
+  ): Promise<Omit<SelectorResolutionResult, 'resolutionTimeMs'>> {
     try {
-      let locator = this.page.getByText(selector.text);
-
       // Add tag filtering if specified
-      if (selector.tag) {
-        locator = this.page
-          .locator(selector.tag)
-          .filter({ hasText: selector.text });
-      }
-
-      const count = await locator.count();
+      const {
+        locator,
+        count,
+        root: matchRoot,
+      } = await this._locateAcrossFrames(
+        (root) =>
+          selector.tag
+            ? root.locator(selector.tag).filter({ hasText: selector.text })
+            : root.getByText(selector.text),
+        diveInIframes
+      );
 
       if (count === 0) {
         const alternatives = await this._findTextAlternatives(selector.text);
@@ -589,7 +784,7 @@ export class SelectorResolver {
           selector,
           confidence: 0,
           strategy: ResolutionStrategy.TEXT_FALLBACK,
-          error: `Multiple elements (${count}) found with text "${selector.text}". Please be more specific:\n${candidateDescriptions}\nConsider using CSS selector or role with text filter.`,
+          error: `Multiple elements (${count}) found with text "${selector.text}". Please be more specific:\n${candidateDescriptions}\nConsider using CSS selector or role with text filter.${this._frameHint(matchRoot)}`,
         };
       }
 
@@ -598,6 +793,7 @@ export class SelectorResolver {
         selector,
         confidence,
         strategy: ResolutionStrategy.TEXT_FALLBACK,
+        frame: await this._frameInfo(matchRoot),
       };
     } catch (error) {
       throw new Error(

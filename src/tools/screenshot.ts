@@ -3,7 +3,10 @@ import { z } from 'zod';
 import type { Response } from '../response.js';
 import { expectationSchema } from '../schemas/expectation.js';
 import type { Tab } from '../tab.js';
-import { elementSelectorSchema } from '../types/selectors.js';
+import {
+  diveInIframesSchema,
+  elementSelectorSchema,
+} from '../types/selectors.js';
 import { formatObject } from '../utils/codegen.js';
 import { defineTabTool } from './tool.js';
 import { generateLocator } from './utils.js';
@@ -34,6 +37,7 @@ const screenshotSchema = z
       .describe(
         'Optional element selectors for element screenshots. If not provided, viewport screenshot will be taken.'
       ),
+    diveInIframes: diveInIframesSchema,
     fullPage: z
       .boolean()
       .optional()
@@ -100,7 +104,9 @@ async function getScreenshotLocator(
     return null;
   }
 
-  const resolutionResults = await tab.resolveElementLocators(params.selectors);
+  const resolutionResults = await tab.resolveElementLocators(params.selectors, {
+    diveInIframes: params.diveInIframes,
+  });
   const successfulResults = resolutionResults.filter(
     (r) => r.locator && !r.error
   );

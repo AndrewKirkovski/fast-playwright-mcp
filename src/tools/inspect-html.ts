@@ -201,6 +201,7 @@ async function performInspection(
     includeAttributes: params.includeAttributes,
     preserveWhitespace: params.preserveWhitespace,
     excludeSelector: params.excludeSelector,
+    diveInIframes: params.diveInIframes,
   };
 
   const inspectionResult = await inspector.extractHTML(inspectionOptions);
@@ -235,7 +236,9 @@ export const browserInspectHtml = defineTabTool({
   },
   handle: async (tab, params, response) => {
     try {
-      const inspector = new HTMLInspector(tab.page);
+      const inspector = new HTMLInspector(tab.page, {
+        onFrameMatch: (frame) => tab.noteFrameMatch(frame),
+      });
       const { result: finalResult, suggestions } = await performInspection(
         inspector,
         params

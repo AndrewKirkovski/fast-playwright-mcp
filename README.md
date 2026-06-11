@@ -1,7 +1,8 @@
 ## **Fast** Playwright MCP
 
-This MCP server is a fork of the Microsoft one.
-<https://github.com/microsoft/playwright-mcp>
+This repository — **[AndrewKirkovski/fast-playwright-mcp](https://github.com/AndrewKirkovski/fast-playwright-mcp)** — is a fork of **[tontoko/fast-playwright-mcp](https://github.com/tontoko/fast-playwright-mcp)** (the token-optimized "Fast" Playwright MCP), which is itself a fork of **[microsoft/playwright-mcp](https://github.com/microsoft/playwright-mcp)**.
+
+**Lineage:** `microsoft/playwright-mcp` → `tontoko/fast-playwright-mcp` (token optimization, batching, diagnostics, the unified selector system) → **this fork** (iframe-piercing selectors, media emulation, per-workspace profile isolation, implicit-role find — see [Additions in this fork](#additions-in-this-fork-andrewkirkovski)).
 
 A Model Context Protocol (MCP) server that provides browser automation capabilities using [Playwright](https://playwright.dev). This server enables LLMs to interact with web pages through structured accessibility snapshots, bypassing the need for screenshots or visually-tuned models.
 
@@ -11,7 +12,9 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
 - **LLM-friendly**. No vision models needed, operates purely on structured data.
 - **Deterministic tool application**. Avoids ambiguity common with screenshot-based approaches.
 
-### Fast Server Features (This Fork)
+### Fast Server Features (from the `tontoko` upstream)
+
+> The features in this section come from [`tontoko/fast-playwright-mcp`](https://github.com/tontoko/fast-playwright-mcp). For what **this** fork adds on top, see [Additions in this fork](#additions-in-this-fork-andrewkirkovski).
 
 - **Token Optimization**. All tools support an `expectation` parameter to control response content:
   - `includeCode: false` - Suppress Playwright code generation to reduce tokens
@@ -49,6 +52,17 @@ A Model Context Protocol (MCP) server that provides browser automation capabilit
   - **Intelligent Resolution**: Parallel CSS resolution, sequential role matching, automatic fallback
   - **Multiple Match Handling**: When multiple elements match, returns candidate list for LLM selection
   - **HTML Inspection**: New `browser_inspect_html` tool for intelligent content extraction with depth control
+
+### Additions in this fork (AndrewKirkovski)
+
+On top of [`tontoko/fast-playwright-mcp`](https://github.com/tontoko/fast-playwright-mcp), this fork adds:
+
+- **iframe-piercing selectors** _(opt-in, default off)_. Every selector-based tool — `browser_click`, `browser_type`, `browser_hover`, `browser_select_option`, `browser_drag`, `browser_take_screenshot` (element shots), `browser_evaluate`, `browser_inspect_html` — takes an optional **`diveInIframes: true`** parameter. When set, the `css` / `role` / `text` strategies search the main frame first and, only if the top document has no match, fall back to every child `<iframe>` (including `about:srcdoc` hosts) — without it, any element inside an iframe is unreachable except via `browser_evaluate`. **Default is `false`** — top-document only, identical to upstream — so nothing changes unless you ask for it. (`ref` selectors resolve across frames via Playwright's native `aria-ref` regardless, and `browser_snapshot` already includes same-process iframe content. `browser_find_elements` is a separate discovery engine and remains top-document only.)
+  - **Frame-path metadata**. When `diveInIframes` matches an element inside a frame, the action response adds a note with the **iframe path** — the chain from the top document down to the matched frame, each hop identified by its `<iframe>` `title` / `name` / `id` / URL (and `depth`). The resolution result carries this as a structured `frame: { depth, path: FrameStep[] }`.
+  - **Labeling `srcdoc` frames** (app convention, not tool-specific). A `srcdoc` iframe's URL is just `about:srcdoc`, so to make the path readable, set a standard **`title`** (recommended — it's the frame's accessible description) and/or **`name`** attribute on the `<iframe>` describing what it loads (e.g. `<iframe title="my-app: /events/123/galleries" name="app-main" srcdoc="…">`). Any app that does this gets self-describing frame paths for free.
+- **`browser_emulate_media` tool**. Emulate CSS media features via Playwright's `page.emulateMedia()`: `colorScheme` (`light` / `dark` / `no-preference`), `contrast`, `forcedColors`, `media` (`screen` / `print`), and `reducedMotion`. Pass `null` for a field to disable its emulation. Handy for verifying dark mode and print styles.
+- **Per-workspace profile isolation**. The persistent browser profile is isolated per workspace, with a lockfile pre-check, so concurrent sessions across different projects don't collide on a single shared profile (`profile in use` errors).
+- **`browser_find_elements` implicit ARIA roles**. Role searches resolve implicit ARIA roles via `getByRole`, so e.g. a bare `<button>` matches `role: button` without an explicit `role="button"` attribute.
 
 ### Requirements
 - Node.js 18 or newer

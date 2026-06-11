@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ElementSelector } from './selectors.js';
-import { elementSelectorSchema } from './selectors.js';
+import { diveInIframesSchema, elementSelectorSchema } from './selectors.js';
 
 /**
  * HTML Inspection system types for detailed HTML structure retrieval
@@ -31,6 +31,8 @@ export interface HTMLInspectionOptions {
   preserveWhitespace?: boolean;
   /** CSS selector to filter out unwanted elements */
   excludeSelector?: string;
+  /** When true, resolve selectors across child iframes (main frame first). */
+  diveInIframes?: boolean;
 }
 
 /**
@@ -79,6 +81,7 @@ export const htmlInspectionOptionsSchema = z.object({
     .string()
     .optional()
     .describe('CSS selector to exclude elements'),
+  diveInIframes: diveInIframesSchema,
 });
 
 /**

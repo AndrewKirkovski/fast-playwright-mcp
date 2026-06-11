@@ -94,6 +94,18 @@ export const elementSelectorSchema = z
   );
 
 /**
+ * Opt-in flag shared by every selector-based tool. Off by default so behavior
+ * matches upstream (top document only); set true to also search child iframes.
+ */
+export const diveInIframesSchema = z
+  .boolean()
+  .optional()
+  .describe(
+    'When true, css/role/text selectors also search inside child <iframe>s ' +
+      '(including srcdoc), main frame first. Default false: only the top document is searched.'
+  );
+
+/**
  * Confidence level for selector resolution results
  */
 export const SelectorConfidence = {
@@ -120,6 +132,23 @@ export type ResolutionStrategy =
   (typeof ResolutionStrategy)[keyof typeof ResolutionStrategy];
 
 /**
+ * One hop in the iframe chain from the top document down to a matched element.
+ * For opaque frames (e.g. `srcdoc`, where `url` is `about:srcdoc`) the standard
+ * `<iframe>` attributes `name` / `title` / `id` are the only stable label — apps
+ * are encouraged to set `title` (and/or `name`) to describe what they load.
+ */
+export interface FrameStep {
+  /** The `<iframe>` `name` attribute (Playwright `frame.name()`), if set. */
+  name?: string;
+  /** The `<iframe>` `title` attribute — recommended label for srcdoc frames. */
+  title?: string;
+  /** The `<iframe>` `id` attribute, if set. */
+  id?: string;
+  /** The frame URL. `about:srcdoc` for srcdoc frames. */
+  url?: string;
+}
+
+/**
  * Result of selector resolution containing locator and metadata
  */
 export interface SelectorResolutionResult {
@@ -131,6 +160,10 @@ export interface SelectorResolutionResult {
   confidence: number;
   /** Resolution strategy used */
   strategy: ResolutionStrategy;
+  /** Set when the match was found inside an iframe (diveInIframes). `path` lists
+   *  each iframe from the top document down to the matched frame; `depth` =
+   *  `path.length` (1 = a direct child iframe). Absent for top-document matches. */
+  frame?: { depth: number; path: FrameStep[] };
   /** Alternative selectors if resolution failed or has low confidence */
   alternatives?: ElementSelector[];
   /** Time taken to resolve in milliseconds */
@@ -149,6 +182,9 @@ export interface BatchResolutionOptions {
   continueOnError?: boolean;
   /** Strategy for parallel/sequential execution */
   executionStrategy?: 'parallel' | 'sequential' | 'hybrid';
+  /** When true, css/role/text selectors also search child `<iframe>`s (main
+   *  frame first). Default false — top-document only, matching upstream. */
+  diveInIframes?: boolean;
 }
 
 /**

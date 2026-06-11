@@ -8,22 +8,28 @@ import type { ElementSelector } from '../types/selectors.js';
  */
 export interface ElementResolutionResult {
   locator: playwright.Locator;
-  // Add any other shared properties if needed
 }
 
 /**
- * Resolves element selectors and handles common error scenarios
+ * Resolves element selectors and handles common error scenarios.
+ * Iframe-match notices are emitted centrally (the resolver reports matches to
+ * the Tab; the defineTabTool wrapper drains them into the response), so this
+ * helper just resolves and returns the first hit.
  * @param tab The browser tab
  * @param selectors Array of element selectors to resolve
  * @param errorMessage Custom error message prefix for failures
- * @returns The first successfully resolved locator
+ * @param diveInIframes When true, also search child iframes (default false)
+ * @returns The first successfully resolved locator (+ frame info if in an iframe)
  */
 export async function resolveFirstElement(
   tab: Tab,
   selectors: ElementSelector[],
-  errorMessage = 'Failed to resolve element selectors'
+  errorMessage = 'Failed to resolve element selectors',
+  diveInIframes = false
 ): Promise<ElementResolutionResult> {
-  const resolutionResults = await tab.resolveElementLocators(selectors);
+  const resolutionResults = await tab.resolveElementLocators(selectors, {
+    diveInIframes,
+  });
   const successfulResults = resolutionResults.filter(
     (r) => r.locator && !r.error
   );
@@ -74,14 +80,15 @@ export async function handleSnapshotExpectation(
 export async function resolveDragElements(
   tab: Tab,
   startSelectors: ElementSelector[],
-  endSelectors: ElementSelector[]
+  endSelectors: ElementSelector[],
+  diveInIframes = false
 ): Promise<{
   startLocator: playwright.Locator;
   endLocator: playwright.Locator;
 }> {
   const [startResults, endResults] = await Promise.all([
-    tab.resolveElementLocators(startSelectors),
-    tab.resolveElementLocators(endSelectors),
+    tab.resolveElementLocators(startSelectors, { diveInIframes }),
+    tab.resolveElementLocators(endSelectors, { diveInIframes }),
   ]);
 
   const startSuccessful = startResults.filter((r) => r.locator && !r.error);

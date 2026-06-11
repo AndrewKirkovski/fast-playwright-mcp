@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { expectationSchema } from '../schemas/expectation.js';
-import { elementSelectorSchema } from '../types/selectors.js';
+import {
+  diveInIframesSchema,
+  elementSelectorSchema,
+} from '../types/selectors.js';
 import { quote } from '../utils/codegen.js';
 import { generateKeyPressCode } from '../utils/common-formatters.js';
 import {
@@ -45,6 +48,7 @@ const selectorsSchema = z
 
 const typeSchema = z.object({
   selectors: selectorsSchema,
+  diveInIframes: diveInIframesSchema,
   text: z.string().describe('Text to type into the element'),
   submit: z.boolean().optional().describe('Press Enter after typing if true'),
   slowly: z
@@ -65,7 +69,12 @@ const type = defineTabTool({
     type: 'destructive',
   },
   handle: async (tab, params, response) => {
-    const { locator } = await resolveFirstElement(tab, params.selectors);
+    const { locator } = await resolveFirstElement(
+      tab,
+      params.selectors,
+      undefined,
+      params.diveInIframes
+    );
 
     await tab.waitForCompletion(async () => {
       if (params.slowly) {

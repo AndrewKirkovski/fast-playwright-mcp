@@ -1,5 +1,8 @@
 import type { Locator, Page } from 'playwright';
-import { SelectorResolver } from '../services/selector-resolver.js';
+import {
+  type FrameMatchSink,
+  SelectorResolver,
+} from '../services/selector-resolver.js';
 import {
   type ElementInspectionMetadata,
   type ElementInspectionResult,
@@ -41,8 +44,8 @@ export class HTMLInspector {
     preserveWhitespace: false,
   };
 
-  constructor(page: Page) {
-    this.selectorResolver = new SelectorResolver(page);
+  constructor(page: Page, options: { onFrameMatch?: FrameMatchSink } = {}) {
+    this.selectorResolver = new SelectorResolver(page, options);
   }
 
   /**
@@ -171,7 +174,7 @@ export class HTMLInspector {
       const selectorStartTime = Date.now();
       const selectorResults = await this.selectorResolver.resolveSelectors(
         mergedOptions.selectors,
-        { continueOnError: true }
+        { continueOnError: true, diveInIframes: mergedOptions.diveInIframes }
       );
       const selectorResolutionMs = Date.now() - selectorStartTime;
 

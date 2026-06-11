@@ -51,6 +51,9 @@ export function defineTabTool<Input extends z.ZodType>(
     ...tool,
     handle: async (context, params, response) => {
       const tab = context.currentTabOrDie();
+      // Drop any notices left over from a prior partial run so this tool's
+      // response only reflects its own selector resolution.
+      tab.drainFrameNotices();
       const modalStates = tab.modalStates().map((state) => state.type);
       if (
         tool.clearsModalState &&
@@ -66,7 +69,15 @@ export function defineTabTool<Input extends z.ZodType>(
             tab.modalStatesMarkdown().join('\n')
         );
       } else {
-        return await tool.handle(tab, params, response);
+        try {
+          return await tool.handle(tab, params, response);
+        } finally {
+          // Surface any "matched inside an iframe" notices accumulated during
+          // selector resolution — for every selector-based tool, not just click.
+          for (const note of tab.drainFrameNotices()) {
+            response.addResult(note);
+          }
+        }
       }
     },
   };

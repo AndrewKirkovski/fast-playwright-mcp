@@ -11,6 +11,7 @@ import type {
   BatchResolutionOptions,
   ElementSelector,
   EnhancedSelectorResult,
+  FrameStep,
   SelectorResolutionResult,
 } from './types/selectors.js';
 import { logUnhandledError } from './utils/log.js';
@@ -61,6 +62,9 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   private readonly _customRefMappings: Map<string, string> = new Map();
   private _customRefCounter = 0;
   private readonly _selectorResolver: SelectorResolver;
+  // Deduped "matched inside an iframe" notices accumulated during selector
+  // resolution; drained into each tool's response by the defineTabTool wrapper.
+  private readonly _frameNotices = new Set<string>();
   private readonly _navigationState: {
     isNavigating: boolean;
     lastNavigationStart: number;
@@ -78,7 +82,9 @@ export class Tab extends EventEmitter<TabEventsInterface> {
     this.context = context;
     this.page = page;
     this._onPageClose = onPageClose;
-    this._selectorResolver = new SelectorResolver(page);
+    this._selectorResolver = new SelectorResolver(page, {
+      onFrameMatch: (frame) => this.noteFrameMatch(frame),
+    });
     page.on('console', (event) =>
       this._handleConsoleMessage(messageToConsoleMessage(event))
     );
@@ -125,6 +131,33 @@ export class Tab extends EventEmitter<TabEventsInterface> {
   }
   static forPage(page: playwright.Page): Tab | undefined {
     return (page as { [tabSymbol]?: Tab })[tabSymbol];
+  }
+
+  /**
+   * Record that a selector resolved inside an iframe (the resolver's frame sink).
+   * Public so tools that run their own resolver (e.g. HTML inspection) can feed
+   * the same buffer. Deduped by the rendered note so repeated/fallback matches
+   * on the same frame collapse to one line.
+   */
+  noteFrameMatch(frame: { depth: number; path: FrameStep[] }): void {
+    const label = frame.path
+      .map(
+        (step) => step.title || step.name || step.id || step.url || '<iframe>'
+      )
+      .join(' › ');
+    this._frameNotices.add(
+      `Note: element matched inside an iframe (depth ${frame.depth}: ${label}) — resolved by diving into child frames.`
+    );
+  }
+
+  /** Return and clear accumulated iframe-match notices (drained per tool call). */
+  drainFrameNotices(): string[] {
+    if (this._frameNotices.size === 0) {
+      return [];
+    }
+    const notices = [...this._frameNotices];
+    this._frameNotices.clear();
+    return notices;
   }
   modalStates(): ModalState[] {
     return this._modalStates;

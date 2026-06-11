@@ -8,9 +8,6 @@ import { DiagnosticBase } from './common/diagnostic-base.js';
 import { safeDispose } from './common/error-enrichment-utils.js';
 import { SmartHandleBatch } from './smart-handle.js';
 
-// Regex for splitting class names - moved to top level for performance
-const _CLASS_SPLIT_REGEX = /\s+/;
-
 export interface SearchCriteria {
   text?: string;
   role?: string;
@@ -562,19 +559,26 @@ export class ElementDiscovery extends DiagnosticBase {
     element: playwright.ElementHandle
   ): Promise<string> {
     return await element.evaluate((el) => {
-      // Define regex pattern as string to avoid lint warning
-      const CLASS_SPLIT_PATTERN = '\\s+';
-      const classSplitRegex = new RegExp(CLASS_SPLIT_PATTERN);
-
       // Helper functions to reduce complexity
       const isUnique = (selector: string): boolean => {
-        return document.querySelectorAll(selector).length === 1;
+        try {
+          return document.querySelectorAll(selector).length === 1;
+        } catch {
+          // Invalid selector (e.g. unescaped special chars) — treat as not unique
+          return false;
+        }
       };
 
       const getClasses = (elem: Element): string => {
-        return elem.className
-          ? `.${elem.className.trim().split(classSplitRegex).join('.')}`
-          : '';
+        // SVG etc. have SVGAnimatedString for className; coerce via classList.
+        const list = Array.from(elem.classList);
+        if (list.length === 0) {
+          return '';
+        }
+        // Escape each class individually so Tailwind classes containing
+        // `:`, `[`, `]`, `.`, `/` (e.g. `hover:text-primary`, `text-[13px]`,
+        // `p-2.5`, `w-1/2`) produce a valid CSS selector.
+        return `.${list.map((c) => CSS.escape(c)).join('.')}`;
       };
 
       const tryIdSelector = (elem: Element, elemTag: string): string | null => {
@@ -763,9 +767,14 @@ export class ElementDiscovery extends DiagnosticBase {
       ];
 
       for (const strategy of strategies) {
-        const result = strategy();
-        if (result) {
-          return result;
+        try {
+          const result = strategy();
+          if (result) {
+            return result;
+          }
+        } catch {
+          // Strategy threw (e.g. invalid selector in downstream helper) —
+          // fall through and try the next one rather than aborting.
         }
       }
 
