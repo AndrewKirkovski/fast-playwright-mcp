@@ -44,6 +44,11 @@ const BASE_BROWSER_TOOLS = [
   'browser_type',
   'browser_wait_for',
   'browser_close',
+  'browser_emulate_media',
+  'browser_fill_form',
+  'browser_keydown',
+  'browser_keyup',
+  'browser_reload',
 ];
 
 test('test snapshot tool list', async ({ client }) => {
