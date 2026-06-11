@@ -44,7 +44,7 @@
     }
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.16.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/sharp": "^0.31.1",
     "commander": "^13.1.0",
     "debug": "^4.4.1",
@@ -54,7 +54,7 @@
     "playwright": "1.58.0-alpha-1766189059000",
     "playwright-core": "1.58.0-alpha-1766189059000",
     "sharp": "^0.34.3",
-    "ws": "^8.18.1",
+    "ws": "^8.21.0",
     "zod": "^3.24.1",
     "zod-to-json-schema": "^3.24.4"
   },
