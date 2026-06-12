@@ -232,7 +232,8 @@ Playwright MCP server supports following arguments. They can be provided in the 
   --browser <browser>          browser or chrome channel to use, possible
                                values: chrome, firefox, webkit, msedge.
   --caps <caps>                comma-separated list of additional capabilities
-                               to enable, possible values: vision, pdf.
+                               to enable, possible values: vision, pdf, storage,
+                               testing, network, config, devtools.
   --cdp-endpoint <endpoint>    CDP endpoint to connect to.
   --config <path>              path to the configuration file.
   --device <device>            device to emulate, for example: "iPhone 15"
@@ -275,17 +276,18 @@ You can run Playwright MCP with persistent profile like a regular browser (defau
 **Persistent profile**
 
 All the logged in information will be stored in the persistent profile, you can delete it between sessions if you'd like to clear the offline state.
-Persistent profile is located at the following locations and you can override it with the `--user-data-dir` argument.
+
+**This fork isolates the profile per workspace** — the directory name includes a hash of the client's root path (or the server's working directory when none is provided), so concurrent sessions in different projects don't collide on a single shared profile. Override the location with the `--user-data-dir` argument. The default is:
 
 ```bash
 # Windows
-%USERPROFILE%\AppData\Local\ms-playwright\mcp-{channel}-profile
+%USERPROFILE%\AppData\Local\ms-playwright\mcp-{channel}-{workspace-hash}
 
 # macOS
-- ~/Library/Caches/ms-playwright/mcp-{channel}-profile
+~/Library/Caches/ms-playwright/mcp-{channel}-{workspace-hash}
 
 # Linux
-- ~/.cache/ms-playwright/mcp-{channel}-profile
+~/.cache/ms-playwright/mcp-{channel}-{workspace-hash}
 ```
 
 **Isolated**
@@ -368,13 +370,22 @@ npx github:AndrewKirkovski/fast-playwright-mcp --config path/to/config.json
     host?: string;  // Host to bind to (default: localhost)
   },
 
-  // List of additional capabilities
+  // List of opt-in tool capabilities (core capabilities are always enabled)
   capabilities?: Array<
-    'tabs' |    // Tab management
-    'install' | // Browser installation
-    'pdf' |     // PDF generation
-    'vision' |  // Coordinate-based interactions
+    | 'vision'   // Coordinate-based interactions
+    | 'pdf'      // PDF generation
+    | 'storage'  // Cookies & web storage
+    | 'testing'  // Assertions & locator generation
+    | 'network'  // Request routing & mocking
+    | 'config'   // Config inspection
+    | 'devtools' // Interactive tracing
   >;
+
+  // Whether to save the Playwright MCP session into the output directory
+  saveSession?: boolean;
+
+  // Whether to save the Playwright trace of the session into the output directory
+  saveTrace?: boolean;
 
   // Directory for output files
   outputDir?: string;
@@ -421,23 +432,23 @@ And then in MCP client config, set the `url` to the HTTP endpoint:
 <details>
 <summary><b>Docker</b></summary>
 
-**NOTE:** The Docker implementation only supports headless chromium at the moment.
+**NOTE:** Docker only supports headless chromium. This fork does not publish a Docker image, so build it yourself from the included `Dockerfile`:
+
+```
+docker build -t fast-playwright-mcp .
+```
+
+Then reference the locally-built image in your MCP client config:
 
 ```js
 {
   "mcpServers": {
     "playwright": {
       "command": "docker",
-      "args": ["run", "-i", "--rm", "--init", "--pull=always", "mcr.microsoft.com/playwright/mcp"]
+      "args": ["run", "-i", "--rm", "--init", "fast-playwright-mcp"]
     }
   }
 }
-```
-
-You can build the Docker image yourself.
-
-```
-docker build -t mcr.microsoft.com/playwright/mcp .
 ```
 </details>
 
@@ -454,9 +465,9 @@ http.createServer(async (req, res) => {
   // ...
 
   // Creates a headless Playwright MCP server with SSE transport
-  const connection = await createConnection({ browser: { launchOptions: { headless: true } } });
+  const connection = createConnection({ browser: { launchOptions: { headless: true } } });
   const transport = new SSEServerTransport('/messages', res);
-  await connection.sever.connect(transport);
+  await connection.connect(transport);
 
   // ...
 });

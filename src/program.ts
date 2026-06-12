@@ -42,7 +42,7 @@ program
   )
   .option(
     '--caps <caps>',
-    'comma-separated list of additional capabilities to enable, possible values: vision, pdf.',
+    'comma-separated list of additional capabilities to enable, possible values: vision, pdf, storage, testing, network, config, devtools.',
     commaSeparatedList
   )
   .option('--cdp-endpoint <endpoint>', 'CDP endpoint to connect to.')
