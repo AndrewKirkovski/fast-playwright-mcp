@@ -26,7 +26,7 @@ export interface TabInfo {
 
 export const Button: React.FC<{
   variant: 'primary' | 'default' | 'reject';
-  onClick: () => void;
+  onClick: (event: React.MouseEvent) => void;
   children: React.ReactNode;
 }> = ({ variant, onClick, children }) => {
   return (
@@ -45,26 +45,29 @@ export interface TabItemProps {
 export const TabItem: React.FC<TabItemProps> = ({ tab, onClick, button }) => {
   if (onClick) {
     return (
-      <button
-        className="tab-item"
-        onClick={onClick}
-        style={{ cursor: 'pointer' }}
-        type="button"
-      >
-        <img
-          alt={tab.favIconUrl ? `Favicon for ${tab.title}` : 'Default tab icon'}
-          className="tab-favicon"
-          src={
-            tab.favIconUrl ||
-            'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23f6f8fa"/></svg>'
-          }
-        />
-        <div className="tab-content">
-          <div className="tab-title">{tab.title || 'Untitled'}</div>
-          <div className="tab-url">{tab.url}</div>
-        </div>
+      // The row is a plain layout container (no handler); the clickable area is
+      // a real <button> and the action {button} is a SIBLING. This keeps both
+      // controls semantic without nesting <button>s (which is invalid HTML and
+      // makes the inner button's clicks ambiguous).
+      <div className="tab-item">
+        <button className="tab-item-main" onClick={onClick} type="button">
+          <img
+            alt={
+              tab.favIconUrl ? `Favicon for ${tab.title}` : 'Default tab icon'
+            }
+            className="tab-favicon"
+            src={
+              tab.favIconUrl ||
+              'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><rect width="16" height="16" fill="%23f6f8fa"/></svg>'
+            }
+          />
+          <div className="tab-content">
+            <div className="tab-title">{tab.title || 'Untitled'}</div>
+            <div className="tab-url">{tab.url}</div>
+          </div>
+        </button>
         {button}
-      </button>
+      </div>
     );
   }
 

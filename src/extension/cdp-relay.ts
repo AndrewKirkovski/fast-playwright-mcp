@@ -111,9 +111,13 @@ export class CDPRelayServer {
       throw new Error('Invalid Chrome extension ID format');
     }
 
-    const url = new URL(
-      `chrome-extension://${extensionId}/lib/ui/connect.html`
-    );
+    // The built extension emits connect.html at the package root (the HTML
+    // there references ./lib/ui/connect.js). Vite's rollup input keeps the
+    // HTML at the root while only JS/assets go under lib/ui — see
+    // extension/vite.config.ts. The extension's own e2e tests load the same
+    // root path. Pointing at lib/ui/connect.html 404s and the tab picker
+    // never opens.
+    const url = new URL(`chrome-extension://${extensionId}/connect.html`);
     url.searchParams.set('mcpRelayUrl', mcpRelayEndpoint);
 
     // Sanitize client info before serialization
@@ -183,16 +187,13 @@ export class CDPRelayServer {
 
   private _safeJsonParse<T = unknown>(jsonString: string): T | null {
     try {
-      // Additional validation: check for suspicious patterns
-      if (
-        jsonString.includes('__proto__') ||
-        jsonString.includes('constructor') ||
-        jsonString.includes('prototype')
-      ) {
-        cdpRelayDebug('Potential prototype pollution attempt detected');
-        return null;
-      }
-
+      // NOTE: Do NOT pre-filter the raw string for "__proto__"/"constructor"/
+      // "prototype". CDP payloads (DOM/JS inspection, page text, evaluate
+      // results) routinely contain those words, so rejecting them here
+      // silently dropped valid traffic and tore the connection down. Prototype
+      // pollution is instead neutralized after parsing by the recursive
+      // sanitizer below — JSON.parse creates own data properties and does not
+      // pollute Object.prototype.
       const result = JSON.parse(jsonString);
 
       // Basic type validation
@@ -423,7 +424,10 @@ export class CDPRelayServer {
         }
         // Simulate auto-attach behavior with real target info
         {
-          const result = (await this._extensionConnection?.send(
+          if (!this._extensionConnection) {
+            throw new Error('Extension not connected');
+          }
+          const result = (await this._extensionConnection.send(
             'attachToTab'
           )) as { targetInfo: Record<string, unknown> };
           const targetInfo = result.targetInfo;
@@ -526,16 +530,13 @@ class ExtensionConnection {
 
   private _parseJsonSafely<T = unknown>(jsonString: string): T | null {
     try {
-      // Additional validation: check for suspicious patterns
-      if (
-        jsonString.includes('__proto__') ||
-        jsonString.includes('constructor') ||
-        jsonString.includes('prototype')
-      ) {
-        cdpRelayDebug('Potential prototype pollution attempt detected');
-        return null;
-      }
-
+      // NOTE: Do NOT pre-filter the raw string for "__proto__"/"constructor"/
+      // "prototype". CDP payloads (DOM/JS inspection, page text, evaluate
+      // results) routinely contain those words, so rejecting them here
+      // silently dropped valid traffic and tore the connection down. Prototype
+      // pollution is instead neutralized after parsing by the recursive
+      // sanitizer below — JSON.parse creates own data properties and does not
+      // pollute Object.prototype.
       const result = JSON.parse(jsonString);
 
       // Basic type validation

@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-export function debugLog(..._args: unknown[]): void {
-  const enabled = true;
-  if (enabled) {
-    // Debug logging is currently disabled in production
-    // console.log(..._args);
+// Flip to true to surface bridge diagnostics in the extension's service-worker
+// console. Off by default to keep production quiet.
+const DEBUG = false;
+export function debugLog(...args: unknown[]): void {
+  if (DEBUG) {
+    // biome-ignore lint/suspicious/noConsole: the only diagnostic channel available to the extension service worker
+    console.log('[pw-mcp-bridge]', ...args);
   }
 }
 
@@ -123,6 +125,9 @@ export class RelayConnection {
     if (source.tabId !== this._debuggee.tabId) {
       return;
     }
+    // Tell the relay this was a graceful debugger detach (it clears its cached
+    // tab info on `detachedFromTab`) before we tear the socket down.
+    this._sendMessage({ method: 'detachedFromTab', params: { reason } });
     this.close(`Debugger detached: ${reason}`);
     this._debuggee = {};
   }
@@ -165,7 +170,18 @@ export class RelayConnection {
     if (message.method === 'attachToTab') {
       await this._tabPromise;
       debugLog('Attaching debugger to tab:', this._debuggee);
-      await chrome.debugger.attach(this._debuggee, '1.3');
+      try {
+        await chrome.debugger.attach(this._debuggee, '1.3');
+      } catch (error: unknown) {
+        // Tolerate the tab already being attached (e.g. a prior session that
+        // has not fully detached). Any other failure is fatal.
+        const messageText =
+          error instanceof Error ? error.message : String(error);
+        if (!messageText.includes('already attached')) {
+          throw error;
+        }
+        debugLog('Debugger already attached, reusing:', messageText);
+      }
       const result: unknown = await chrome.debugger.sendCommand(
         this._debuggee,
         'Target.getTargetInfo'
@@ -193,15 +209,16 @@ export class RelayConnection {
       // Forward CDP command to chrome.debugger
       return await chrome.debugger.sendCommand(debuggerSession, method, params);
     }
+    // Unknown method: reject so the relay's pending callback fails fast instead
+    // of resolving with `undefined` (a silent no-op the caller can't detect).
+    throw new Error(`Unknown method: ${message.method}`);
   }
 
   private _sendError(code: number, message: string): void {
-    this._sendMessage({
-      error: {
-        code,
-        message,
-      },
-    });
+    // The Node relay types `error` as a string (ExtensionResponse.error), so
+    // send a string — not a {code,message} object — to keep the wire format
+    // consistent across both halves of the protocol.
+    this._sendMessage({ error: `[${code}] ${message}` });
   }
 
   private _sendMessage(message: unknown): void {

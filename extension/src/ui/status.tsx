@@ -33,29 +33,42 @@ const StatusApp: React.FC = () => {
   });
 
   const loadStatus = useCallback(async () => {
-    // Get current connection status from background script
-    const { connectedTabId } = await chrome.runtime.sendMessage({
-      type: 'getConnectionStatus',
-    });
-    if (connectedTabId) {
-      const tab = await chrome.tabs.get(connectedTabId);
-      setStatus({
-        isConnected: true,
-        connectedTabId,
-        connectedTab: {
-          id: tab.id ?? 0,
-          windowId: tab.windowId ?? 0,
-          title: tab.title ?? 'Untitled',
-          url: tab.url ?? '',
-          favIconUrl: tab.favIconUrl,
-        },
+    // Get current connection status from the background service worker.
+    let response: { connectedTabId?: number | null } | undefined;
+    try {
+      response = await chrome.runtime.sendMessage({
+        type: 'getConnectionStatus',
       });
-    } else {
-      setStatus({
-        isConnected: false,
-        connectedTabId: null,
-      });
+    } catch {
+      // Service worker asleep/unreachable — treat as disconnected.
+      setStatus({ isConnected: false, connectedTabId: null });
+      return;
     }
+    const connectedTabId = response?.connectedTabId ?? null;
+    if (!connectedTabId) {
+      setStatus({ isConnected: false, connectedTabId: null });
+      return;
+    }
+    // The connected tab may have been closed since the badge was set; if we
+    // can't read it, report disconnected rather than throwing.
+    let tab: chrome.tabs.Tab;
+    try {
+      tab = await chrome.tabs.get(connectedTabId);
+    } catch {
+      setStatus({ isConnected: false, connectedTabId: null });
+      return;
+    }
+    setStatus({
+      isConnected: true,
+      connectedTabId,
+      connectedTab: {
+        id: tab.id ?? 0,
+        windowId: tab.windowId ?? 0,
+        title: tab.title ?? 'Untitled',
+        url: tab.url ?? '',
+        favIconUrl: tab.favIconUrl,
+      },
+    });
   }, []);
 
   useEffect(() => {
@@ -68,13 +81,19 @@ const StatusApp: React.FC = () => {
     if (!status.connectedTabId) {
       return;
     }
-    await chrome.tabs.update(status.connectedTabId, { active: true });
-    window.close();
+    try {
+      await chrome.tabs.update(status.connectedTabId, { active: true });
+    } finally {
+      window.close();
+    }
   };
 
   const disconnect = async () => {
-    await chrome.runtime.sendMessage({ type: 'disconnect' });
-    window.close();
+    try {
+      await chrome.runtime.sendMessage({ type: 'disconnect' });
+    } finally {
+      window.close();
+    }
   };
 
   return (

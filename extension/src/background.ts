@@ -150,9 +150,21 @@ class TabShareExtension {
       debugLog(`Connecting to relay at ${mcpRelayUrl}`);
       const socket = new WebSocket(mcpRelayUrl);
       await new Promise<void>((resolve, reject) => {
-        socket.onopen = () => resolve();
-        socket.onerror = () => reject(new Error('WebSocket error'));
-        setTimeout(() => reject(new Error('Connection timeout')), 5000);
+        const timer = setTimeout(() => {
+          // Close the half-open socket so it doesn't dangle (and possibly open
+          // after we've given up) with no owner.
+          socket.close();
+          reject(new Error('Connection timeout'));
+        }, 5000);
+        socket.onopen = () => {
+          clearTimeout(timer);
+          resolve();
+        };
+        socket.onerror = () => {
+          clearTimeout(timer);
+          socket.close();
+          reject(new Error('WebSocket error'));
+        };
       });
 
       const connection = new RelayConnection(socket);
@@ -186,10 +198,13 @@ class TabShareExtension {
       }
       await this._setConnectedTabId(null);
 
-      this._activeConnection =
-        this._pendingTabSelection.get(selectorTabId)?.connection;
+      const pendingSelection = this._pendingTabSelection.get(selectorTabId);
+      this._activeConnection = pendingSelection?.connection;
       if (!this._activeConnection) {
         throw new Error('No active MCP relay connection');
+      }
+      if (pendingSelection?.timerId) {
+        clearTimeout(pendingSelection.timerId);
       }
       this._pendingTabSelection.delete(selectorTabId);
 
@@ -209,6 +224,10 @@ class TabShareExtension {
       ]);
       debugLog('Connected to MCP bridge');
     } catch (error: unknown) {
+      // Tear down the half-open connection so its socket doesn't leak until the
+      // relay independently times out.
+      this._activeConnection?.close('Failed to connect tab');
+      this._activeConnection = undefined;
       await this._setConnectedTabId(null);
       debugLog(
         `Failed to connect tab ${tabId}:`,
@@ -253,10 +272,13 @@ class TabShareExtension {
   }
 
   private _onTabRemoved(tabId: number): void {
-    const pendingConnection = this._pendingTabSelection.get(tabId)?.connection;
-    if (pendingConnection) {
+    const pending = this._pendingTabSelection.get(tabId);
+    if (pending) {
+      if (pending.timerId) {
+        clearTimeout(pending.timerId);
+      }
       this._pendingTabSelection.delete(tabId);
-      pendingConnection.close('Browser tab closed');
+      pending.connection.close('Browser tab closed');
       return;
     }
     if (this._connectedTabId !== tabId) {
@@ -281,10 +303,15 @@ class TabShareExtension {
           const existed = this._pendingTabSelection.delete(tabId);
           if (existed) {
             pending.connection.close('Tab has been inactive for 5 seconds');
-            chrome.tabs.sendMessage(tabId, { type: 'connectionTimeout' });
+            // The tab may already be gone (that's why it went inactive); ignore
+            // a "receiving end does not exist" rejection.
+            chrome.tabs
+              .sendMessage(tabId, { type: 'connectionTimeout' })
+              .catch(() => {
+                // no-op: target tab/listener may no longer exist
+              });
           }
         }, 5000);
-        return;
       }
     }
   }
@@ -305,6 +332,7 @@ class TabShareExtension {
     const tabs = await chrome.tabs.query({});
     return tabs.filter(
       (tab) =>
+        tab.id !== undefined &&
         tab.url &&
         !['chrome:', 'edge:', 'devtools:'].some((scheme) =>
           tab.url?.startsWith(scheme)

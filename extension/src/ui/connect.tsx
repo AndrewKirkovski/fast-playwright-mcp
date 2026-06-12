@@ -55,26 +55,46 @@ const ConnectApp: React.FC = () => {
   const [mcpRelayUrl, setMcpRelayUrl] = useState('');
 
   const connectToMCPRelay = useCallback(async (relayUrlParam: string) => {
-    const response = await chrome.runtime.sendMessage({
-      type: 'connectToMCPRelay',
-      mcpRelayUrl: relayUrlParam,
-    });
-    if (!response.success) {
+    let response: { success?: boolean; error?: string } | undefined;
+    try {
+      response = await chrome.runtime.sendMessage({
+        type: 'connectToMCPRelay',
+        mcpRelayUrl: relayUrlParam,
+      });
+    } catch (e) {
       setStatus({
         type: 'error',
-        message: `Failed to connect to MCP relay: ${response.error}`,
+        message: `Failed to reach the extension service worker: ${e instanceof Error ? e.message : String(e)}`,
+      });
+      return;
+    }
+    if (!response?.success) {
+      setStatus({
+        type: 'error',
+        message: `Failed to connect to MCP relay: ${response?.error ?? 'no response'}`,
       });
     }
   }, []);
 
   const loadTabs = useCallback(async () => {
-    const response = await chrome.runtime.sendMessage({ type: 'getTabs' });
-    if (response.success) {
-      setTabs(response.tabs);
+    let response:
+      | { success?: boolean; tabs?: TabInfo[]; error?: string }
+      | undefined;
+    try {
+      response = await chrome.runtime.sendMessage({ type: 'getTabs' });
+    } catch (e) {
+      setStatus({
+        type: 'error',
+        message: `Failed to load tabs: ${e instanceof Error ? e.message : String(e)}`,
+      });
+      return;
+    }
+    if (response?.success && response.tabs) {
+      setTabs(response.tabs.filter((tab) => typeof tab.id === 'number'));
     } else {
       setStatus({
         type: 'error',
-        message: `Failed to load tabs: ${response.error}`,
+        message: `Failed to load tabs: ${response?.error ?? 'no response'}`,
       });
     }
   }, []);
@@ -103,7 +123,10 @@ const ConnectApp: React.FC = () => {
 
     try {
       const client = JSON.parse(params.get('client') || '{}');
-      const info = `${client.name}/${client.version}`;
+      const info =
+        client && typeof client === 'object' && client.name
+          ? `${client.name}/${client.version ?? '?'}`
+          : 'unknown client';
       setClientInfo(info);
       setStatus({
         type: 'connecting',
@@ -128,9 +151,6 @@ const ConnectApp: React.FC = () => {
 
   const handleConnectToTab = useCallback(
     async (tab: TabInfo) => {
-      setShowButtons(false);
-      setShowTabList(false);
-
       try {
         const response = await chrome.runtime.sendMessage({
           type: 'connectToTab',
@@ -140,11 +160,15 @@ const ConnectApp: React.FC = () => {
         });
 
         if (response?.success) {
+          // Only hide the picker once the tab is actually connected.
+          setShowButtons(false);
+          setShowTabList(false);
           setStatus({
             type: 'connected',
             message: `MCP client "${clientInfo}" connected.`,
           });
         } else {
+          // Leave the picker visible so the user can retry another tab.
           setStatus({
             type: 'error',
             message:
