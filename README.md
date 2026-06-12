@@ -447,7 +447,7 @@ docker build -t mcr.microsoft.com/playwright/mcp .
 ```js
 import http from 'http';
 
-import { createConnection } from 'fast-playwright-mcp';
+import { createConnection } from '@andrewkirkovski/fast-playwright-mcp';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 
 http.createServer(async (req, res) => {
