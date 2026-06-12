@@ -1,25 +1,27 @@
 {
-  "name": "@tontoko/fast-playwright-mcp",
+  "name": "fast-playwright-mcp",
   "version": "0.1.3",
   "publishConfig": {
     "access": "public"
   },
-  "description": "Fast Playwright Tools for MCP",
+  "description": "Fast Playwright Tools for MCP (iframe-piercing, token-optimized fork)",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tontoko/fast-playwright-mcp"
+    "url": "https://github.com/AndrewKirkovski/fast-playwright-mcp"
   },
-  "homepage": "https://github.com/tontoko/fast-playwright-mcp",
+  "homepage": "https://github.com/AndrewKirkovski/fast-playwright-mcp",
   "engines": {
     "node": ">=18"
   },
   "author": {
-    "name": "Tomohiko Hiraki"
+    "name": "AndrewKirkovski",
+    "url": "https://github.com/AndrewKirkovski"
   },
   "license": "Apache-2.0",
   "scripts": {
     "build": "bun build ./src/**/**/*.ts ./src/**/*.ts ./src/*.ts --outdir ./lib --root ./src --target node --format esm --external '*'",
+    "prepare": "node utils/build.mjs",
     "build:publish": "bun build ./src/**/**/*.ts ./src/**/*.ts ./src/*.ts --outdir ./lib --root ./src --target node --format esm --external '*'",
     "benchmark": "bun benchmark/src/index.ts",
     "benchmark:verbose": "bun benchmark/src/index.ts --verbose",

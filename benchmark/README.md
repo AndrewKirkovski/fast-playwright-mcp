@@ -77,7 +77,7 @@ console.log('Results:', benchmark.getResults());
   servers: {
     original: {
       command: 'npx',
-      args: ['-y', '@tontoko/fast-playwright-mcp@latest', '--isolated']
+      args: ['-y', 'github:AndrewKirkovski/fast-playwright-mcp', '--isolated']
     },
     fast: {
       command: 'node',
@@ -275,7 +275,7 @@ node benchmark/lib/index.js --verbose
 ```bash
 # Kill any stuck processes
 pkill -f "cli.js --isolated"
-pkill -f "@tontoko/fast-playwright-mcp.*--isolated"
+pkill -f "github:AndrewKirkovski/fast-playwright-mcp.*--isolated"
 ```
 
 ## Contributing

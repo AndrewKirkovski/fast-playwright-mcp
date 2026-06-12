@@ -85,14 +85,14 @@ First, install the Playwright MCP server with your client.
     "playwright": {
       "command": "npx",
       "args": [
-        "@tontoko/fast-playwright-mcp@latest"
+        "github:AndrewKirkovski/fast-playwright-mcp"
       ]
     }
   }
 }
 ```
 
-[<img src="https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF" alt="Install in VS Code">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522fast-playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522%2540tontoko%252Ffast-playwright-mcp%2540latest%2522%255D%257D) [<img alt="Install in VS Code Insiders" src="https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5">](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522fast-playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522%2540tontoko%252Ffast-playwright-mcp%2540latest%2522%255D%257D)
+[<img src="https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF" alt="Install in VS Code">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522fast-playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522github%253AAndrewKirkovski%252Ffast-playwright-mcp%2522%255D%257D) [<img alt="Install in VS Code Insiders" src="https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5">](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522fast-playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522github%253AAndrewKirkovski%252Ffast-playwright-mcp%2522%255D%257D)
 
 
 <details>
@@ -101,7 +101,7 @@ First, install the Playwright MCP server with your client.
 Use the Claude Code CLI to add the Playwright MCP server:
 
 ```bash
-claude mcp add fast-playwright npx @tontoko/fast-playwright-mcp@latest
+claude mcp add fast-playwright npx github:AndrewKirkovski/fast-playwright-mcp
 ```
 </details>
 
@@ -121,7 +121,7 @@ Follow the MCP install [guide](https://modelcontextprotocol.io/quickstart/user),
 
 #### Or install manually:
 
-Go to `Cursor Settings` -> `MCP` -> `Add new MCP Server`. Name to your liking, use `command` type with the command `npx @tontoko/fast-playwright-mcp@latest`. You can also verify config or add command like arguments via clicking `Edit`.
+Go to `Cursor Settings` -> `MCP` -> `Add new MCP Server`. Name to your liking, use `command` type with the command `npx github:AndrewKirkovski/fast-playwright-mcp`. You can also verify config or add command like arguments via clicking `Edit`.
 
 </details>
 
@@ -141,7 +141,7 @@ Follow the MCP install [guide](https://github.com/google-gemini/gemini-cli/blob/
 
 #### Or install manually:
 
-Go to `Advanced settings` -> `Extensions` -> `Add custom extension`. Name to your liking, use type `STDIO`, and set the `command` to `npx @tontoko/fast-playwright-mcp`. Click "Add Extension".
+Go to `Advanced settings` -> `Extensions` -> `Add custom extension`. Name to your liking, use type `STDIO`, and set the `command` to `npx github:AndrewKirkovski/fast-playwright-mcp`. Click "Add Extension".
 </details>
 
 <details>
@@ -169,7 +169,7 @@ Follow the MCP Servers [documentation](https://opencode.ai/docs/mcp-servers/). F
       "type": "local",
       "command": [
         "npx",
-        "@tontoko/fast-playwright-mcp"
+        "github:AndrewKirkovski/fast-playwright-mcp"
       ],
       "enabled": true
     }
@@ -192,7 +192,7 @@ Click <code>Save</code>.
 
 #### Click the button to install:
 
-[<img src="https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF" alt="Install in VS Code">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522fast-playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522%2540tontoko%252Ffast-playwright-mcp%2540latest%2522%255D%257D) [<img alt="Install in VS Code Insiders" src="https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5">](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522fast-playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522%2540tontoko%252Ffast-playwright-mcp%2540latest%2522%255D%257D)
+[<img src="https://img.shields.io/badge/VS_Code-VS_Code?style=flat-square&label=Install%20Server&color=0098FF" alt="Install in VS Code">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522fast-playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522github%253AAndrewKirkovski%252Ffast-playwright-mcp%2522%255D%257D) [<img alt="Install in VS Code Insiders" src="https://img.shields.io/badge/VS_Code_Insiders-VS_Code_Insiders?style=flat-square&label=Install%20Server&color=24bfa5">](https://insiders.vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522fast-playwright%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522github%253AAndrewKirkovski%252Ffast-playwright-mcp%2522%255D%257D)
 
 #### Or install manually:
 
@@ -200,7 +200,7 @@ Follow the MCP install [guide](https://code.visualstudio.com/docs/copilot/chat/m
 
 ```bash
 # For VS Code
-code --add-mcp '{"name":"fast-playwright","command":"npx","args":["@tontoko/fast-playwright-mcp@latest"]}'
+code --add-mcp '{"name":"fast-playwright","command":"npx","args":["github:AndrewKirkovski/fast-playwright-mcp"]}'
 ```
 
 After installation, the Playwright MCP server will be available for use with your GitHub Copilot agent in VS Code.
@@ -220,7 +220,7 @@ Playwright MCP server supports following arguments. They can be provided in the 
 <!--- Options generated by update-readme.js -->
 
 ```
-> npx @tontoko/fast-playwright-mcp@latest --help
+> npx github:AndrewKirkovski/fast-playwright-mcp --help
   --allowed-origins <origins>  semicolon-separated list of origins to allow the
                                browser to request. Default is to allow all.
   --blocked-origins <origins>  semicolon-separated list of origins to block the
@@ -301,7 +301,7 @@ state [here](https://playwright.dev/docs/auth).
     "playwright": {
       "command": "npx",
       "args": [
-        "@tontoko/fast-playwright-mcp@latest",
+        "github:AndrewKirkovski/fast-playwright-mcp",
         "--isolated",
         "--storage-state={path/to/storage.json}"
       ]
@@ -320,7 +320,7 @@ The Playwright MCP server can be configured using a JSON configuration file. You
 using the `--config` command line option:
 
 ```bash
-npx @tontoko/fast-playwright-mcp@latest --config path/to/config.json
+npx github:AndrewKirkovski/fast-playwright-mcp --config path/to/config.json
 ```
 
 <details>
@@ -403,7 +403,7 @@ When running headed browser on system w/o display or from worker processes of th
 run the MCP server from environment with the DISPLAY and pass the `--port` flag to enable HTTP transport.
 
 ```bash
-npx @tontoko/fast-playwright-mcp@latest --port 8931
+npx github:AndrewKirkovski/fast-playwright-mcp --port 8931
 ```
 
 And then in MCP client config, set the `url` to the HTTP endpoint:
@@ -447,7 +447,7 @@ docker build -t mcr.microsoft.com/playwright/mcp .
 ```js
 import http from 'http';
 
-import { createConnection } from '@tontoko/fast-playwright-mcp';
+import { createConnection } from 'fast-playwright-mcp';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 
 http.createServer(async (req, res) => {
@@ -487,6 +487,7 @@ http.createServer(async (req, res) => {
   - Description: Perform click on web page
   - Parameters:
     - `selectors` (array): Array of element selectors (max 5). Selectors are tried in order until one succeeds (fallback mechanism). Multiple matches trigger an error with candidate list. Supports: ref (highest priority), CSS (#id, .class, tag), role (button, textbox, etc.), text content. Example: [{css: "#submit"}, {role: "button", text: "Submit"}] - tries ID first, falls back to role+text
+    - `diveInIframes` (boolean, optional): When true, css/role/text selectors also search inside child <iframe>s (including srcdoc), main frame first. Default false: only the top document is searched.
     - `doubleClick` (boolean, optional): Double-click if true
     - `button` (string, optional): Mouse button (default: left)
     - `expectation` (object, optional): Page state capture config. Use batch_execute for multi-clicks
@@ -497,6 +498,14 @@ http.createServer(async (req, res) => {
 - **browser_close**
   - Title: Close browser
   - Description: Close the page
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_console_clear**
+  - Title: Clear console messages
+  - Description: Clear the collected console message buffer for the current tab
   - Parameters: None
   - Read-only: **true**
 
@@ -535,6 +544,7 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `startSelectors` (array): Source element selectors for drag start
     - `endSelectors` (array): Target element selectors for drag end
+    - `diveInIframes` (boolean, optional): When true, css/role/text selectors also search inside child <iframe>s (including srcdoc), main frame first. Default false: only the top document is searched.
     - `expectation` (object, optional): Page state after drag. Use batch_execute for workflows
   - Read-only: **false**
 
@@ -560,6 +570,7 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `function` (string): JS function: () => {...} or (element) => {...}
     - `selectors` (array, optional): Optional element selectors. If provided, function receives element as parameter
+    - `diveInIframes` (boolean, optional): When true, css/role/text selectors also search inside child <iframe>s (including srcdoc), main frame first. Default false: only the top document is searched.
     - `expectation` (object, optional): Page state config. false for data extraction, true for DOM changes
   - Read-only: **false**
 
@@ -571,6 +582,17 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `paths` (array): Absolute paths to upload (array)
     - `expectation` (object, optional): Page state config. Use batch_execute for click→upload
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_fill_form**
+  - Title: Fill form
+  - Description: Fill multiple form fields in a single call. Token-efficient alternative to issuing separate type/select/check tools per field.
+  - Parameters:
+    - `fields` (array): Fields to fill, in order
+    - `diveInIframes` (boolean, optional): When true, css/role/text selectors also search inside child <iframe>s (including srcdoc), main frame first. Default false: only the top document is searched.
+    - `expectation` (object, optional): Page state after filling
   - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
@@ -606,6 +628,7 @@ http.createServer(async (req, res) => {
   - Description: Hover over element on page
   - Parameters:
     - `selectors` (array): Array of element selectors (max 5). Selectors are tried in order until one succeeds (fallback mechanism). Multiple matches trigger an error with candidate list. Supports: ref (highest priority), CSS (#id, .class, tag), role (button, textbox, etc.), text content. Example: [{css: "#submit"}, {role: "button", text: "Submit"}] - tries ID first, falls back to role+text
+    - `diveInIframes` (boolean, optional): When true, css/role/text selectors also search inside child <iframe>s (including srcdoc), main frame first. Default false: only the top document is searched.
     - `expectation` (object, optional): Page state after hover. Use batch_execute for hover→click
   - Read-only: **true**
 
@@ -623,11 +646,32 @@ http.createServer(async (req, res) => {
     - `includeAttributes` (boolean, optional): Include element attributes
     - `preserveWhitespace` (boolean, optional): Preserve whitespace in content
     - `excludeSelector` (string, optional): CSS selector to exclude elements
+    - `diveInIframes` (boolean, optional): When true, css/role/text selectors also search inside child <iframe>s (including srcdoc), main frame first. Default false: only the top document is searched.
     - `includeSuggestions` (boolean, optional): Include CSS selector suggestions in output
     - `includeChildren` (boolean, optional): Include child elements in extraction
     - `optimizeForLLM` (boolean, optional): Optimize extracted HTML for LLM consumption
     - `expectation` (object, optional): Page state config (minimal for HTML inspection)
   - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_keydown**
+  - Title: Press a key down
+  - Description: Press and hold a key down without releasing it. Pair with browser_keyup for modifier combos (e.g. hold Shift, then click).
+  - Parameters:
+    - `key` (string): Key to hold down, e.g. `Shift`, `Control`, `ArrowLeft`, or `a`
+    - `expectation` (object, optional): Page state config
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_keyup**
+  - Title: Release a key
+  - Description: Release a key previously held down with browser_keydown
+  - Parameters:
+    - `key` (string): Key to release, e.g. `Shift`, `Control`, `ArrowLeft`, or `a`
+    - `expectation` (object, optional): Page state config
+  - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
@@ -683,6 +727,26 @@ http.createServer(async (req, res) => {
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
+- **browser_press_sequentially**
+  - Title: Type text key by key
+  - Description: Type text one character at a time via the keyboard (page-level, no element target). Use browser_type to fill a specific field.
+  - Parameters:
+    - `text` (string): Text to type
+    - `submit` (boolean, optional): Press Enter after typing if true
+    - `expectation` (object, optional): Page state config
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_reload**
+  - Title: Reload page
+  - Description: Reload the current page
+  - Parameters:
+    - `expectation` (object, optional): Page state after reload
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
 - **browser_resize**
   - Title: Resize browser window
   - Description: Resize the browser window
@@ -699,6 +763,7 @@ http.createServer(async (req, res) => {
   - Description: Select option in dropdown
   - Parameters:
     - `selectors` (array): Array of element selectors (max 5). Selectors are tried in order until one succeeds (fallback mechanism). Multiple matches trigger an error with candidate list. Supports: ref (highest priority), CSS (#id, .class, tag), role (button, textbox, etc.), text content. Example: [{css: "#submit"}, {role: "button", text: "Submit"}] - tries ID first, falls back to role+text
+    - `diveInIframes` (boolean, optional): When true, css/role/text selectors also search inside child <iframe>s (including srcdoc), main frame first. Default false: only the top document is searched.
     - `values` (array): Values to select (array)
     - `expectation` (object, optional): Page state after selection. Use batch_execute for forms
   - Read-only: **false**
@@ -721,6 +786,7 @@ http.createServer(async (req, res) => {
     - `type` (string, optional): Image format for the screenshot. Default is png.
     - `filename` (string, optional): File name to save the screenshot to. Defaults to `page-{timestamp}.{png|jpeg}` if not specified.
     - `selectors` (array, optional): Optional element selectors for element screenshots. If not provided, viewport screenshot will be taken.
+    - `diveInIframes` (boolean, optional): When true, css/role/text selectors also search inside child <iframe>s (including srcdoc), main frame first. Default false: only the top document is searched.
     - `fullPage` (boolean, optional): When true, takes a screenshot of the full scrollable page, instead of the currently visible viewport. Cannot be used with element screenshots.
     - `expectation` (object, optional): Additional page state config
   - Read-only: **true**
@@ -732,6 +798,7 @@ http.createServer(async (req, res) => {
   - Description: Type text into editable element
   - Parameters:
     - `selectors` (array): Array of element selectors (max 5) supporting ref, role, CSS, or text-based selection
+    - `diveInIframes` (boolean, optional): When true, css/role/text selectors also search inside child <iframe>s (including srcdoc), main frame first. Default false: only the top document is searched.
     - `text` (string): Text to type into the element
     - `submit` (boolean, optional): Press Enter after typing if true
     - `slowly` (boolean, optional): Type slowly for auto-complete if true
@@ -847,6 +914,17 @@ http.createServer(async (req, res) => {
     - `expectation` (object, optional): undefined
   - Read-only: **true**
 
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_mouse_wheel**
+  - Title: Scroll wheel
+  - Description: Scroll the page with the mouse wheel by a pixel delta. Requires --caps=vision.
+  - Parameters:
+    - `deltaX` (number, optional): Horizontal scroll in pixels (default 0)
+    - `deltaY` (number): Vertical scroll in pixels; positive scrolls down
+    - `expectation` (object, optional): undefined
+  - Read-only: **true**
+
 </details>
 
 <details><summary><b>PDF generation (opt-in via --caps=pdf)</b></summary>
@@ -858,6 +936,301 @@ http.createServer(async (req, res) => {
   - Description: Save page as PDF
   - Parameters:
     - `filename` (string, optional): File name to save the pdf to. Defaults to `page-{timestamp}.pdf` if not specified.
+  - Read-only: **true**
+
+</details>
+
+<details><summary><b>Cookies &amp; web storage (opt-in via --caps=storage)</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_cookie_clear**
+  - Title: Clear cookies
+  - Description: Clear all cookies
+  - Parameters: None
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_cookie_delete**
+  - Title: Delete cookie
+  - Description: Delete a specific cookie by name
+  - Parameters:
+    - `name` (string): Cookie name to delete
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_cookie_get**
+  - Title: Get cookie
+  - Description: Get a specific cookie by name
+  - Parameters:
+    - `name` (string): Cookie name to get
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_cookie_list**
+  - Title: List cookies
+  - Description: List all cookies, optionally filtered by domain/path
+  - Parameters:
+    - `domain` (string, optional): Filter cookies by domain substring
+    - `path` (string, optional): Filter cookies by path prefix
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_cookie_set**
+  - Title: Set cookie
+  - Description: Set a cookie with optional flags (domain, path, expires, httpOnly, secure, sameSite). Domain defaults to the current page host.
+  - Parameters:
+    - `name` (string): Cookie name
+    - `value` (string): Cookie value
+    - `domain` (string, optional): Cookie domain
+    - `path` (string, optional): Cookie path
+    - `expires` (number, optional): Expiration as a Unix timestamp (seconds)
+    - `httpOnly` (boolean, optional): Whether the cookie is HTTP only
+    - `secure` (boolean, optional): Whether the cookie is secure
+    - `sameSite` (string, optional): SameSite attribute
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_localstorage_clear**
+  - Title: Clear localStorage
+  - Description: Clear all localStorage for the current origin
+  - Parameters: None
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_localstorage_delete**
+  - Title: Delete localStorage item
+  - Description: Delete a localStorage item by key
+  - Parameters:
+    - `key` (string): Key to delete
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_localstorage_get**
+  - Title: Get localStorage item
+  - Description: Get a localStorage item by key
+  - Parameters:
+    - `key` (string): Key to get
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_localstorage_list**
+  - Title: List localStorage
+  - Description: List all localStorage key-value pairs for the current origin
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_localstorage_set**
+  - Title: Set localStorage item
+  - Description: Set a localStorage item
+  - Parameters:
+    - `key` (string): Key to set
+    - `value` (string): Value to set
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_sessionstorage_clear**
+  - Title: Clear sessionStorage
+  - Description: Clear all sessionStorage for the current origin
+  - Parameters: None
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_sessionstorage_delete**
+  - Title: Delete sessionStorage item
+  - Description: Delete a sessionStorage item by key
+  - Parameters:
+    - `key` (string): Key to delete
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_sessionstorage_get**
+  - Title: Get sessionStorage item
+  - Description: Get a sessionStorage item by key
+  - Parameters:
+    - `key` (string): Key to get
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_sessionstorage_list**
+  - Title: List sessionStorage
+  - Description: List all sessionStorage key-value pairs for the current origin
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_sessionstorage_set**
+  - Title: Set sessionStorage item
+  - Description: Set a sessionStorage item
+  - Parameters:
+    - `key` (string): Key to set
+    - `value` (string): Value to set
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_set_storage_state**
+  - Title: Restore storage state
+  - Description: Restore storage state (cookies + local storage) from a JSON file. Relative paths resolve against the output directory.
+  - Parameters:
+    - `filename` (string): Path to the storage state file to restore
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_storage_state**
+  - Title: Save storage state
+  - Description: Save storage state (cookies + local storage) to a JSON file in the output directory for later reuse with browser_set_storage_state
+  - Parameters:
+    - `filename` (string, optional): Output filename. Defaults to storage-state-<timestamp>.json
+  - Read-only: **true**
+
+</details>
+
+<details><summary><b>Assertions &amp; locator generation (opt-in via --caps=testing)</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_generate_locator**
+  - Title: Generate locator
+  - Description: Resolve the given selectors and return the Playwright locator string, for building test code
+  - Parameters:
+    - `selectors` (array): Element selectors (ref, role, css, or text), tried in order
+    - `diveInIframes` (boolean, optional): When true, css/role/text selectors also search inside child <iframe>s (including srcdoc), main frame first. Default false: only the top document is searched.
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_verify_element_visible**
+  - Title: Verify element visible
+  - Description: Assert that an element is visible on the page
+  - Parameters:
+    - `selectors` (array): Element selectors (ref, role, css, or text), tried in order
+    - `diveInIframes` (boolean, optional): When true, css/role/text selectors also search inside child <iframe>s (including srcdoc), main frame first. Default false: only the top document is searched.
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_verify_list_visible**
+  - Title: Verify list visible
+  - Description: Assert that a list element (resolved by selectors) contains all of the given item texts
+  - Parameters:
+    - `selectors` (array): Element selectors (ref, role, css, or text), tried in order
+    - `items` (array): Item texts that must all be present in the list
+    - `diveInIframes` (boolean, optional): When true, css/role/text selectors also search inside child <iframe>s (including srcdoc), main frame first. Default false: only the top document is searched.
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_verify_text_visible**
+  - Title: Verify text visible
+  - Description: Assert that text is visible on the page. Prefer browser_verify_element_visible when you know the element role.
+  - Parameters:
+    - `text` (string): Text to verify is visible on the page
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_verify_value**
+  - Title: Verify value
+  - Description: Assert a form element's current value or checked state
+  - Parameters:
+    - `selectors` (array): Element selectors (ref, role, css, or text), tried in order
+    - `type` (string): Element type
+    - `value` (string): Expected value. For checkbox/radio use "true"/"false".
+    - `diveInIframes` (boolean, optional): When true, css/role/text selectors also search inside child <iframe>s (including srcdoc), main frame first. Default false: only the top document is searched.
+  - Read-only: **true**
+
+</details>
+
+<details><summary><b>Request routing &amp; mocking (opt-in via --caps=network)</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_network_state_set**
+  - Title: Set network state
+  - Description: Toggle the browser between online and offline
+  - Parameters:
+    - `state` (string): Network state to apply
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_route**
+  - Title: Mock network requests
+  - Description: Intercept requests matching a URL pattern. With body/status it fulfills a mock response; otherwise it continues the request with header edits.
+  - Parameters:
+    - `pattern` (string): URL glob to match (e.g. "**/api/users", "**/*.{png,jpg}")
+    - `status` (number, optional): HTTP status to return (default 200)
+    - `body` (string, optional): Response body (text or JSON string)
+    - `contentType` (string, optional): Content-Type header (e.g. "application/json")
+    - `headers` (array, optional): Request headers to add, each "Name: Value"
+    - `removeHeaders` (string, optional): Comma-separated request header names to remove
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_route_list**
+  - Title: List network routes
+  - Description: List all active network routes registered via browser_route
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_unroute**
+  - Title: Remove network routes
+  - Description: Remove network routes matching a pattern, or all routes if no pattern is given
+  - Parameters:
+    - `pattern` (string, optional): URL pattern to remove (omit to remove all routes)
+  - Read-only: **false**
+
+</details>
+
+<details><summary><b>Config inspection (opt-in via --caps=config)</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_get_config**
+  - Title: Get config
+  - Description: Get the resolved MCP config (with credential fields redacted) after merging CLI options, environment variables and config file
+  - Parameters: None
+  - Read-only: **true**
+
+</details>
+
+<details><summary><b>Interactive tracing (opt-in via --caps=devtools)</b></summary>
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_start_tracing**
+  - Title: Start tracing
+  - Description: Start recording a Playwright trace (screenshots + DOM snapshots). Conflicts with --save-trace.
+  - Parameters: None
+  - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_stop_tracing**
+  - Title: Stop tracing
+  - Description: Stop trace recording and save it to a zip file in the output directory
+  - Parameters:
+    - `filename` (string, optional): Output filename. Defaults to trace-<timestamp>.zip
   - Read-only: **true**
 
 </details>

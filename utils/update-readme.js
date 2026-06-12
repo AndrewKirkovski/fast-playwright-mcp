@@ -31,6 +31,11 @@ const capabilities = {
   'core-install': 'Browser installation',
   vision: 'Coordinate-based (opt-in via --caps=vision)',
   pdf: 'PDF generation (opt-in via --caps=pdf)',
+  storage: 'Cookies & web storage (opt-in via --caps=storage)',
+  testing: 'Assertions & locator generation (opt-in via --caps=testing)',
+  network: 'Request routing & mocking (opt-in via --caps=network)',
+  config: 'Config inspection (opt-in via --caps=config)',
+  devtools: 'Interactive tracing (opt-in via --caps=devtools)',
 };
 
 const toolsByCapability = Object.fromEntries(
@@ -215,7 +220,7 @@ function updateOptions(content) {
   const endMarker = '<!--- End of options generated section -->';
   return updateSection(content, startMarker, endMarker, [
     '```',
-    '> npx @tontoko/fast-playwright-mcp@latest --help',
+    '> npx github:AndrewKirkovski/fast-playwright-mcp --help',
     ...lines,
     '```',
   ]);
