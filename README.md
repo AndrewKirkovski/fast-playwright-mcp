@@ -117,7 +117,7 @@ Follow the MCP install [guide](https://modelcontextprotocol.io/quickstart/user),
 
 #### Click the button to install:
 
-[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=fast-playwright&config=eyJjb21tYW5kIjoibnB4IEB0b250b2tvL2Zhc3QtcGxheXdyaWdodC1tY3BAbGF0ZXN0In0K)
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=fast-playwright&config=eyJjb21tYW5kIjoibnB4IGdpdGh1YjpBbmRyZXdLaXJrb3Zza2kvZmFzdC1wbGF5d3JpZ2h0LW1jcCJ9)
 
 #### Or install manually:
 
@@ -137,7 +137,7 @@ Follow the MCP install [guide](https://github.com/google-gemini/gemini-cli/blob/
 
 #### Click the button to install:
 
-[![Install in Goose](https://block.github.io/goose/img/extension-install-dark.svg)](https://block.github.io/goose/extension?cmd=npx&arg=%40playwright%2Fmcp%40latest&id=playwright&name=Playwright&description=Interact%20with%20web%20pages%20through%20structured%20accessibility%20snapshots%20using%20Playwright)
+[![Install in Goose](https://block.github.io/goose/img/extension-install-dark.svg)](https://block.github.io/goose/extension?cmd=npx&arg=github%3AAndrewKirkovski%2Ffast-playwright-mcp&id=fast-playwright&name=Fast%20Playwright&description=Interact%20with%20web%20pages%20through%20structured%20accessibility%20snapshots%20using%20Playwright)
 
 #### Or install manually:
 
@@ -149,7 +149,7 @@ Go to `Advanced settings` -> `Extensions` -> `Add custom extension`. Name to you
 
 #### Click the button to install:
 
-[![Add MCP Server playwright to LM Studio](https://files.lmstudio.ai/deeplink/mcp-install-light.svg)](https://lmstudio.ai/install-mcp?name=playwright&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJAcGxheXdyaWdodC9tY3BAbGF0ZXN0Il19)
+[![Add MCP Server playwright to LM Studio](https://files.lmstudio.ai/deeplink/mcp-install-light.svg)](https://lmstudio.ai/install-mcp?name=playwright&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyJnaXRodWI6QW5kcmV3S2lya292c2tpL2Zhc3QtcGxheXdyaWdodC1tY3AiXX0=)
 
 #### Or install manually:
 
