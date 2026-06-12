@@ -610,7 +610,7 @@ class ExtensionConnection {
     }
   }
   private _handleParsedMessage(object: ExtensionResponse) {
-    if (object.id && this._callbacks.has(object.id)) {
+    if (object.id !== undefined && this._callbacks.has(object.id)) {
       const callback = this._callbacks.get(object.id);
       if (!callback) {
         return;
@@ -623,7 +623,7 @@ class ExtensionConnection {
       } else {
         callback.resolve(object.result);
       }
-    } else if (object.id) {
+    } else if (object.id !== undefined) {
       cdpRelayDebug('← Extension: unexpected response', object);
     } else if (object.method) {
       this.onmessage?.(object.method, object.params ?? {});

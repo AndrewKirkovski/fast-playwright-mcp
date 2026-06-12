@@ -165,11 +165,21 @@ class TabShareExtension {
           socket.close();
           reject(new Error('WebSocket error'));
         };
+        socket.onclose = () => {
+          // Server closed before we opened — fail fast instead of waiting out
+          // the timeout. RelayConnection rebinds onclose once the socket opens.
+          clearTimeout(timer);
+          reject(new Error('WebSocket closed before opening'));
+        };
       });
 
       const connection = new RelayConnection(socket);
       connection.onclose = () => {
         debugLog('Connection closed');
+        const entry = this._pendingTabSelection.get(selectorTabId);
+        if (entry?.timerId) {
+          clearTimeout(entry.timerId);
+        }
         this._pendingTabSelection.delete(selectorTabId);
       };
       this._pendingTabSelection.set(selectorTabId, { connection });
@@ -189,6 +199,9 @@ class TabShareExtension {
     windowId: number,
     mcpRelayUrl: string
   ): Promise<void> {
+    // Captured outside the try so the catch can tear down THIS connection (and
+    // only this one) if a concurrent connect has since replaced it.
+    let connection: RelayConnection | undefined;
     try {
       debugLog(`Connecting tab ${tabId} to relay at ${mcpRelayUrl}`);
       try {
@@ -199,19 +212,22 @@ class TabShareExtension {
       await this._setConnectedTabId(null);
 
       const pendingSelection = this._pendingTabSelection.get(selectorTabId);
-      this._activeConnection = pendingSelection?.connection;
-      if (!this._activeConnection) {
+      connection = pendingSelection?.connection;
+      if (!connection) {
         throw new Error('No active MCP relay connection');
       }
+      this._activeConnection = connection;
       if (pendingSelection?.timerId) {
         clearTimeout(pendingSelection.timerId);
       }
       this._pendingTabSelection.delete(selectorTabId);
 
-      this._activeConnection.setTabId(tabId);
-      this._activeConnection.onclose = () => {
+      connection.setTabId(tabId);
+      connection.onclose = () => {
         debugLog('MCP connection closed');
-        this._activeConnection = undefined;
+        if (this._activeConnection === connection) {
+          this._activeConnection = undefined;
+        }
         this._setConnectedTabId(null).catch(() => {
           // Ignore errors during cleanup
         });
@@ -224,10 +240,15 @@ class TabShareExtension {
       ]);
       debugLog('Connected to MCP bridge');
     } catch (error: unknown) {
-      // Tear down the half-open connection so its socket doesn't leak until the
-      // relay independently times out.
-      this._activeConnection?.close('Failed to connect tab');
-      this._activeConnection = undefined;
+      // Tear down the half-open connection so its socket doesn't leak. Only
+      // clear _activeConnection if it still points at THIS connection (a
+      // concurrent connect may have replaced it).
+      if (connection) {
+        connection.close('Failed to connect tab');
+        if (this._activeConnection === connection) {
+          this._activeConnection = undefined;
+        }
+      }
       await this._setConnectedTabId(null);
       debugLog(
         `Failed to connect tab ${tabId}:`,
