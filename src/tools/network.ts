@@ -1,5 +1,6 @@
 import type * as playwright from 'playwright';
 import { z } from 'zod';
+import type { NetworkConditions } from '../context.js';
 import {
   filterNetworkRequests,
   type NetworkFilterOptions,
@@ -231,4 +232,184 @@ const networkState = defineTool({
   },
 });
 
-export default [requests, networkState];
+const cacheSet = defineTool({
+  capability: 'network',
+  // CDP Network.setCacheDisabled has no Firefox/WebKit equivalent.
+  chromiumOnly: true,
+  schema: {
+    name: 'browser_cache_set',
+    title: 'Toggle HTTP cache',
+    description:
+      'Enable or disable the browser HTTP cache, like DevTools "Disable cache". ' +
+      'Chromium-only (Chrome/Edge) — uses CDP; not registered on Firefox/WebKit. ' +
+      'Applies to all tabs and persists across navigations and new tabs. ' +
+      'Independent of offline mode — do not combine with browser_network_state_set ' +
+      'offline (toggling offline while a cache/throttle override is active can ' +
+      'wedge requests); use browser_network_reset to clear.',
+    inputSchema: z.object({
+      enabled: z
+        .boolean()
+        .describe(
+          'true: normal caching. false: disable the cache so every request hits the network.'
+        ),
+    }),
+    type: 'destructive',
+  },
+  handle: async (context, params, response) => {
+    await context.setCacheEnabled(params.enabled);
+    response.addResult(`HTTP cache ${params.enabled ? 'enabled' : 'disabled'}`);
+    response.addCode(
+      `// CDP Network.setCacheDisabled { cacheDisabled: ${!params.enabled} }`
+    );
+  },
+});
+
+// Approximate throttling profiles (bytes/sec, ms), matching the de-facto
+// Puppeteer/DevTools "Slow 3G" / "Fast 3G" values; 4G entries are reasonable
+// approximations. Bandwidth is bytes/sec; latency is added round-trip ms.
+const THROTTLE_PRESETS = {
+  'slow-3g': {
+    downloadThroughput: 50_000,
+    uploadThroughput: 50_000,
+    latency: 2000,
+  },
+  'fast-3g': {
+    downloadThroughput: 180_000,
+    uploadThroughput: 84_375,
+    latency: 563,
+  },
+  'slow-4g': {
+    downloadThroughput: 500_000,
+    uploadThroughput: 375_000,
+    latency: 60,
+  },
+  'fast-4g': {
+    downloadThroughput: 2_500_000,
+    uploadThroughput: 1_250_000,
+    latency: 20,
+  },
+} as const;
+
+const THROTTLE_PRESET_NAMES = [
+  'none',
+  'slow-3g',
+  'fast-3g',
+  'slow-4g',
+  'fast-4g',
+] as const;
+
+function kbpsToBytesPerSec(kbps: number): number {
+  return Math.round((kbps * 1000) / 8);
+}
+
+function resolveThrottle(params: {
+  preset?: (typeof THROTTLE_PRESET_NAMES)[number];
+  downloadKbps?: number;
+  uploadKbps?: number;
+  latencyMs?: number;
+}): { conditions: NetworkConditions | undefined; label: string } {
+  if (params.preset === 'none') {
+    return { conditions: undefined, label: 'cleared (no throttling)' };
+  }
+  if (params.preset) {
+    return {
+      conditions: THROTTLE_PRESETS[params.preset],
+      label: params.preset,
+    };
+  }
+  const hasCustom =
+    params.downloadKbps !== undefined ||
+    params.uploadKbps !== undefined ||
+    params.latencyMs !== undefined;
+  if (!hasCustom) {
+    throw new Error(
+      'Specify a preset or at least one of downloadKbps / uploadKbps / latencyMs.'
+    );
+  }
+  return {
+    conditions: {
+      downloadThroughput:
+        params.downloadKbps === undefined
+          ? -1
+          : kbpsToBytesPerSec(params.downloadKbps),
+      uploadThroughput:
+        params.uploadKbps === undefined
+          ? -1
+          : kbpsToBytesPerSec(params.uploadKbps),
+      latency: params.latencyMs ?? 0,
+    },
+    label: `${params.downloadKbps ?? 'unlimited'} kbps down / ${params.uploadKbps ?? 'unlimited'} kbps up / ${params.latencyMs ?? 0}ms`,
+  };
+}
+
+const throttle = defineTool({
+  capability: 'network',
+  // CDP Network.emulateNetworkConditions has no Firefox/WebKit equivalent.
+  chromiumOnly: true,
+  schema: {
+    name: 'browser_throttle',
+    title: 'Throttle network',
+    description:
+      'Emulate slow/limited network via CDP (bandwidth + latency). ' +
+      'Chromium-only (Chrome/Edge); not registered on Firefox/WebKit. ' +
+      'Pass a preset (use "none" to clear) OR custom downloadKbps/uploadKbps/latencyMs. ' +
+      'Applies to all tabs and persists across navigations and new tabs. ' +
+      'Independent of offline mode — do not combine with browser_network_state_set ' +
+      'offline (toggling offline while throttling is active can wedge requests); ' +
+      'use browser_network_reset to clear.',
+    inputSchema: z.object({
+      preset: z
+        .enum(THROTTLE_PRESET_NAMES)
+        .optional()
+        .describe(
+          'Profile: "none" clears throttling; otherwise an approximate mobile profile. Ignores custom fields when set.'
+        ),
+      downloadKbps: z
+        .number()
+        .positive()
+        .optional()
+        .describe('Custom download cap in kilobits/sec (omit for unlimited)'),
+      uploadKbps: z
+        .number()
+        .positive()
+        .optional()
+        .describe('Custom upload cap in kilobits/sec (omit for unlimited)'),
+      latencyMs: z
+        .number()
+        .nonnegative()
+        .optional()
+        .describe('Custom added latency in milliseconds'),
+    }),
+    type: 'destructive',
+  },
+  handle: async (context, params, response) => {
+    const { conditions, label } = resolveThrottle(params);
+    await context.setNetworkConditions(conditions);
+    response.addResult(`Network throttling: ${label}`);
+    response.addCode(
+      `// CDP Network.emulateNetworkConditions ${JSON.stringify(conditions ?? { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 })}`
+    );
+  },
+});
+
+const networkReset = defineTool({
+  capability: 'network',
+  schema: {
+    name: 'browser_network_reset',
+    title: 'Reset network customizations',
+    description:
+      'Clear all network customizations in one call: remove every route, ' +
+      're-enable the HTTP cache, clear throttling, and go back online. ' +
+      'Useful because cache/throttle/offline otherwise persist across navigations.',
+    inputSchema: z.object({}),
+    type: 'destructive',
+  },
+  handle: async (context, _params, response) => {
+    await context.resetNetwork();
+    response.addResult(
+      'Network reset: routes removed, cache enabled, throttling cleared, online.'
+    );
+  },
+});
+
+export default [requests, networkState, cacheSet, throttle, networkReset];

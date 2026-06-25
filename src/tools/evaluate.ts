@@ -27,7 +27,16 @@ const evaluateSchema = z.object({
     .describe(
       'Optional element selectors. If provided, function receives element as parameter'
     ),
-  diveInIframes: diveInIframesSchema,
+  // Override the shared description: on browser_evaluate the flag ONLY affects
+  // selector resolution, never the document a bare () => {...} runs against.
+  diveInIframes: diveInIframesSchema.describe(
+    'Only affects `selectors` resolution (matching css/role/text inside child <iframe>s). ' +
+      'It has NO effect on a bare `() => {...}` function — that ALWAYS runs in the top document, ' +
+      "so `document.querySelector(...)` won't see iframe contents. To target an iframe, either pass " +
+      '`selectors` with `diveInIframes: true` (the function then receives the matched element), or, ' +
+      'for a same-origin iframe (including srcdoc), reach into it in your function, e.g. ' +
+      "`() => { const d = document.querySelector('iframe')?.contentDocument ?? document; return d.querySelectorAll('.foo').length; }`."
+  ),
   expectation: expectationSchema.describe(
     'Page state config. false for data extraction, true for DOM changes'
   ),
@@ -66,6 +75,19 @@ const evaluate = defineTabTool({
         `await page.${await generateLocator(locator)}.evaluate(${quote(params.function)});`
       );
     } else {
+      if (params.diveInIframes) {
+        // The flag is a no-op here (it only steers selector resolution), but an
+        // agent that set it almost certainly expected iframe contents — say so
+        // loudly instead of silently returning a top-document-only result.
+        response.addResult(
+          'Note: `diveInIframes` was ignored — it only affects `selectors` resolution, ' +
+            'and this call has no `selectors`, so the function ran against the top document only. ' +
+            'To target an iframe, either pass `selectors` with `diveInIframes: true` (the function ' +
+            'then receives the matched element), or, for a same-origin iframe (including srcdoc), ' +
+            'reach into it in your function, e.g. ' +
+            "`() => { const d = document.querySelector('iframe')?.contentDocument ?? document; return d.querySelectorAll('.foo').length; }`."
+        );
+      }
       response.addCode(`await page.evaluate(${quote(params.function)});`);
     }
 

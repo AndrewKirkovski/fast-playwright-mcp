@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { expect, test } from './fixtures.js';
 import {
   expectCodeAndResult,
@@ -67,7 +68,7 @@ const evaluateTestCases = [
 
 // Helper function to test with element
 async function testEvaluateWithElement(
-  client: Awaited<ReturnType<typeof import('./fixtures.js').getClient>>,
+  client: Client,
   server: import('./testserver/index.js').TestServer,
   setup: string,
   evaluateArgs: { function: string; needsRef?: boolean },
@@ -105,7 +106,7 @@ async function testEvaluateWithElement(
 
 // Helper function to test without element
 async function testEvaluateWithoutElement(
-  client: Awaited<ReturnType<typeof import('./fixtures.js').getClient>>,
+  client: Client,
   server: import('./testserver/index.js').TestServer,
   evaluateArgs: { function: string; needsRef?: boolean },
   expectedCode: string | null,
@@ -138,6 +139,35 @@ async function testEvaluateWithoutElement(
     );
   }
 }
+
+test('browser_evaluate: diveInIframes without selectors warns it is a no-op', async ({
+  client,
+  server,
+}) => {
+  // .foo lives only inside the iframe; the top document has none. A bare
+  // () => {...} always runs in the top frame, so diveInIframes can't help here.
+  setServerContent(
+    server,
+    '/',
+    `<div class="top">top</div><iframe srcdoc='<div class="foo">a</div><div class="foo">b</div>'></iframe>`
+  );
+  await client.callTool({
+    name: 'browser_navigate',
+    arguments: { url: server.PREFIX },
+  });
+
+  const result = await client.callTool({
+    name: 'browser_evaluate',
+    arguments: {
+      function: '() => document.querySelectorAll(".foo").length',
+      diveInIframes: true,
+    },
+  });
+
+  const text = result.content?.[0]?.text || '';
+  expect(text).toContain('`diveInIframes` was ignored');
+  expect(text).toContain('contentDocument');
+});
 
 for (const {
   name,

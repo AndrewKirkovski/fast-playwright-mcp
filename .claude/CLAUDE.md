@@ -1,6 +1,10 @@
 # Project Context
 Ultracite enforces strict type safety, accessibility standards, and consistent code quality for JavaScript/TypeScript projects using Biome's lightning-fast formatter and linter.
 
+## Build & Tooling Gotchas
+- **`npm run update-readme` HANGS — never chain it with `&&`.** It runs `bun utils/update-readme.js`, which regenerates README.md correctly and then **never exits** (a lingering handle keeps the process alive; `timeout` reports exit 124). Chaining it (`build && update-readme && test`) silently stalls the whole chain, so the later commands (e.g. tests) never run. Instead: run it **standalone with a hard timeout** — `timeout 30 npm run update-readme` (or `timeout 30 bun utils/update-readme.js`) — and **verify success by grepping README.md for the expected text, NOT by exit code** (124/timeout is expected even on success). The README is fully written before the hang, so the timeout does not corrupt it.
+- Build `lib/` from `src/` with `node utils/build.mjs` (esbuild, ~1s, transpile-only — no type-check) or `bun run build`. `lib/` is gitignored. Type-check separately with `npx tsc --noEmit`; lint/format with `npx ultracite lint|format`.
+
 ## Key Principles
 - Zero configuration required
 - Subsecond performance

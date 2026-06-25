@@ -55,9 +55,16 @@ export const allTools: AnyTool[] = [
   browserDiagnose,
 ];
 export function filteredTools(config: FullConfig): AnyTool[] {
-  return allTools.filter(
-    (tool) =>
+  const isChromium = config.browser.browserName === 'chromium';
+  return allTools.filter((tool) => {
+    // Chromium-only tools (CDP-backed cache/throttle) are hidden entirely on
+    // Firefox/WebKit, where newCDPSession is unavailable.
+    if (tool.chromiumOnly && !isChromium) {
+      return false;
+    }
+    return (
       tool.capability.startsWith('core') ||
       config.capabilities?.includes(tool.capability)
-  );
+    );
+  });
 }

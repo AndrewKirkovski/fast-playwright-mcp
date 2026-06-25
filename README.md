@@ -581,7 +581,7 @@ http.createServer(async (req, res) => {
   - Parameters:
     - `function` (string): JS function: () => {...} or (element) => {...}
     - `selectors` (array, optional): Optional element selectors. If provided, function receives element as parameter
-    - `diveInIframes` (boolean, optional): When true, css/role/text selectors also search inside child <iframe>s (including srcdoc), main frame first. Default false: only the top document is searched.
+    - `diveInIframes` (boolean, optional): Only affects `selectors` resolution (matching css/role/text inside child <iframe>s). It has NO effect on a bare `() => {...}` function — that ALWAYS runs in the top document, so `document.querySelector(...)` won't see iframe contents. To target an iframe, either pass `selectors` with `diveInIframes: true` (the function then receives the matched element), or, for a same-origin iframe (including srcdoc), reach into it in your function, e.g. `() => { const d = document.querySelector('iframe')?.contentDocument ?? document; return d.querySelectorAll('.foo').length; }`.
     - `expectation` (object, optional): Page state config. false for data extraction, true for DOM changes
   - Read-only: **false**
 
@@ -1173,6 +1173,23 @@ http.createServer(async (req, res) => {
 
 <!-- NOTE: This has been generated via update-readme.js -->
 
+- **browser_cache_set**
+  - Title: Toggle HTTP cache
+  - Description: Enable or disable the browser HTTP cache, like DevTools "Disable cache". Chromium-only (Chrome/Edge) — uses CDP; not registered on Firefox/WebKit. Applies to all tabs and persists across navigations and new tabs. Independent of offline mode — do not combine with browser_network_state_set offline (toggling offline while a cache/throttle override is active can wedge requests); use browser_network_reset to clear.
+  - Parameters:
+    - `enabled` (boolean): true: normal caching. false: disable the cache so every request hits the network.
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_network_reset**
+  - Title: Reset network customizations
+  - Description: Clear all network customizations in one call: remove every route, re-enable the HTTP cache, clear throttling, and go back online. Useful because cache/throttle/offline otherwise persist across navigations.
+  - Parameters: None
+  - Read-only: **false**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
 - **browser_network_state_set**
   - Title: Set network state
   - Description: Toggle the browser between online and offline
@@ -1184,12 +1201,16 @@ http.createServer(async (req, res) => {
 
 - **browser_route**
   - Title: Mock network requests
-  - Description: Intercept requests matching a URL pattern. With body/status it fulfills a mock response; otherwise it continues the request with header edits.
+  - Description: Intercept requests matching a URL pattern. Modes (first match wins): (1) abort=true fails the request (simulate a network error); (2) modifyResponse=true fetches the real response, then overlays any status/body/contentType/responseHeaders you supply; (3) any of status/body/contentType/responseHeaders set returns a pure mock; (4) otherwise the request continues with request-header edits.
   - Parameters:
     - `pattern` (string): URL glob to match (e.g. "**/api/users", "**/*.{png,jpg}")
-    - `status` (number, optional): HTTP status to return (default 200)
+    - `abort` (boolean, optional): Fail the request instead of responding (network error)
+    - `abortErrorCode` (string, optional): Failure reason (requires abort=true; default "failed")
+    - `modifyResponse` (boolean, optional): Fetch the real response first, then overlay the fields below. Uses a server-side fetch, so it is not subject to throttle/offline, and it still honors --allowed-origins/--blocked-origins.
+    - `status` (number, optional): HTTP status to return (default 200 for a pure mock)
     - `body` (string, optional): Response body (text or JSON string)
     - `contentType` (string, optional): Content-Type header (e.g. "application/json")
+    - `responseHeaders` (array, optional): Response headers to set, each "Name: Value"
     - `headers` (array, optional): Request headers to add, each "Name: Value"
     - `removeHeaders` (string, optional): Comma-separated request header names to remove
   - Read-only: **false**
@@ -1201,6 +1222,18 @@ http.createServer(async (req, res) => {
   - Description: List all active network routes registered via browser_route
   - Parameters: None
   - Read-only: **true**
+
+<!-- NOTE: This has been generated via update-readme.js -->
+
+- **browser_throttle**
+  - Title: Throttle network
+  - Description: Emulate slow/limited network via CDP (bandwidth + latency). Chromium-only (Chrome/Edge); not registered on Firefox/WebKit. Pass a preset (use "none" to clear) OR custom downloadKbps/uploadKbps/latencyMs. Applies to all tabs and persists across navigations and new tabs. Independent of offline mode — do not combine with browser_network_state_set offline (toggling offline while throttling is active can wedge requests); use browser_network_reset to clear.
+  - Parameters:
+    - `preset` (string, optional): Profile: "none" clears throttling; otherwise an approximate mobile profile. Ignores custom fields when set.
+    - `downloadKbps` (number, optional): Custom download cap in kilobits/sec (omit for unlimited)
+    - `uploadKbps` (number, optional): Custom upload cap in kilobits/sec (omit for unlimited)
+    - `latencyMs` (number, optional): Custom added latency in milliseconds
+  - Read-only: **false**
 
 <!-- NOTE: This has been generated via update-readme.js -->
 

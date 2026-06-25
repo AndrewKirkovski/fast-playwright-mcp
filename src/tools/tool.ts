@@ -20,6 +20,9 @@ export type Tool<
   Input extends z.ZodType = z.ZodType<unknown, z.ZodTypeDef, unknown>,
 > = {
   capability: ToolCapability;
+  /** Only register this tool when the configured browser is Chromium-based.
+   *  Used by CDP-backed tools (cache/throttle) that have no Firefox/WebKit path. */
+  chromiumOnly?: boolean;
   schema: ToolSchema<Input>;
   handle: (
     context: Context,
@@ -36,6 +39,7 @@ export function defineTool<Input extends z.ZodType>(
 }
 export type TabTool<Input extends z.ZodType = z.ZodType> = {
   capability: ToolCapability;
+  chromiumOnly?: boolean;
   schema: ToolSchema<Input>;
   clearsModalState?: ModalState['type'];
   handle: (
